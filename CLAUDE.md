@@ -66,27 +66,28 @@ PRD completo em `docs/PRD.md`. Quando este `CLAUDE.md` divergir do PRD, este arq
 ```
 /
 ├── app/
-│   ├── (public)/                # SEM auth — leitura pública por tenant
-│   │   └── [tenant]/            # caucaia-ce, demo, …
-│   │       ├── page.tsx         # lista de protocolos publicados do tenant
-│   │       └── protocolos/
-│   │           └── [slug]/page.tsx  # visualizador read-only
-│   ├── (auth)/                  # login + recuperação
-│   │   ├── login/page.tsx
-│   │   └── recuperar/page.tsx   # solicitação de magic link de reset
-│   ├── (admin)/                 # COM auth — edição/configuração
-│   │   ├── layout.tsx           # auth guard + header
-│   │   ├── dashboard/page.tsx
-│   │   ├── protocolos/
-│   │   │   ├── page.tsx         # lista (todos os status)
-│   │   │   ├── novo/page.tsx
-│   │   │   └── [id]/
-│   │   │       ├── editar/page.tsx
-│   │   │       └── versoes/page.tsx
-│   │   └── usuarios/page.tsx    # gestor convida editores
-│   ├── api/                     # route handlers
-│   ├── layout.tsx               # root
-│   └── page.tsx                 # landing institucional pública (já existe)
+│   ├── page.tsx                 # / — landing institucional pública
+│   ├── layout.tsx               # root (Plex fonts)
+│   ├── api/
+│   │   └── health/route.ts      # smoke endpoint
+│   ├── auth/
+│   │   └── callback/route.ts    # callback de magic link de reset
+│   ├── login/                   # /login (senha) + /login/recuperar (reset)
+│   │   ├── page.tsx
+│   │   ├── actions.ts
+│   │   └── recuperar/page.tsx
+│   ├── [tenant]/                # /[tenant] — leitura pública (caucaia-ce, demo…)
+│   │   ├── page.tsx             # lista de protocolos publicados
+│   │   └── protocolos/
+│   │       └── [slug]/page.tsx  # visualizador read-only (Fase 4)
+│   └── admin/                   # /admin/* — área autenticada (gestor/curador/etc)
+│       ├── layout.tsx           # auth guard + header
+│       ├── page.tsx             # redirect → /admin/dashboard
+│       ├── dashboard/page.tsx
+│       ├── protocolos/          # lista + editor (Fase 3)
+│       └── usuarios/
+│           ├── page.tsx
+│           └── actions.ts       # invite editor
 ├── proxy.ts                     # auth guard via @supabase/ssr (raiz, Next 16: era middleware.ts)
 ├── components/
 │   ├── ui/                      # shadcn (não editar manualmente; usar CLI)
@@ -440,8 +441,7 @@ Onboarding: após signup, criar `profile` com role `profissional` e ligar a um `
 7. `(admin)/dashboard/page.tsx` — 3 protocolos mais recentes do tenant.
 8. `(admin)/usuarios/page.tsx` — gestor cria editor: server action chama `supabase.auth.admin.createUser` + insert em `profiles`. Senha temporária enviada por email (ou exibida na tela com warning de copiar uma vez).
 9. `(public)/[tenant]/page.tsx` — lista de protocolos publicados do tenant (resolução por subdomain, 404 se não existir).
-10. `lib/audit.ts` — helper que insere em `protocol_audit` com `(tenant_id, user_id, action, payload)`.
-11. Logar `user_login` e `user_invited` no audit.
+10. `lib/audit.ts` — esqueleto pra inserir em `protocol_audit`. Audit de eventos de auth (login, invite) fica deferido para a Fase 5, junto com a migration que estende o enum `audit_action` com `user_login`/`user_invited`/etc.
 
 **Critério de aceitação:**
 - [ ] Migration 0004 aplicada; `pnpm test:rls` continua passando + novo teste de leitura anônima passa.
@@ -449,7 +449,6 @@ Onboarding: após signup, criar `profile` com role `profissional` e ligar a um `
 - [ ] `/admin/dashboard` redireciona para `/login` quando anônimo.
 - [ ] Gestor cria editor em `/admin/usuarios` e o profile aparece em `profiles`.
 - [ ] `/caucaia-ce` (público) lista o protocolo DM2 quando ele estiver `published`.
-- [ ] Audit log registra `user_login` ao logar e `user_invited` ao convidar.
 
 ---
 

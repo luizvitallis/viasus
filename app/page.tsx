@@ -77,18 +77,18 @@ export default function Home() {
 
                 <div className="mt-10 flex flex-col sm:flex-row gap-3">
                   <Link
-                    href="/login"
+                    href="/caucaia-ce"
                     className="inline-flex items-center justify-center gap-2 bg-emerald-800 text-stone-50 font-medium px-6 h-12 hover:bg-emerald-900 transition-colors"
                   >
-                    Acessar plataforma
+                    Ver protocolos de Caucaia
                     <ArrowRight className="size-4" strokeWidth={2.25} />
                   </Link>
-                  <a
-                    href="#documentos"
+                  <Link
+                    href="/login"
                     className="inline-flex items-center justify-center gap-2 border-2 border-stone-900 text-stone-900 font-medium px-6 h-12 hover:bg-stone-900 hover:text-stone-50 transition-colors"
                   >
-                    Ver visão geral
-                  </a>
+                    Acessar painel
+                  </Link>
                 </div>
               </div>
 

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { IBM_Plex_Sans, IBM_Plex_Serif, IBM_Plex_Mono } from "next/font/google";
 import "./globals.css";
+import { cn } from "@/lib/utils";
 
 const plexSans = IBM_Plex_Sans({
   variable: "--font-plex-sans",
@@ -32,7 +33,12 @@ export default function RootLayout({
   return (
     <html
       lang="pt-BR"
-      className={`${plexSans.variable} ${plexSerif.variable} ${plexMono.variable}`}
+      className={cn(
+        plexSans.variable,
+        plexSerif.variable,
+        plexMono.variable,
+        "font-sans",
+      )}
     >
       <body className="min-h-screen flex flex-col">{children}</body>
     </html>
