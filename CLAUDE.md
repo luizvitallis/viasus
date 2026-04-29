@@ -301,13 +301,15 @@ create index idx_usage_protocol_date on protocol_usage(protocol_id, occurred_at 
 ### 4.3. RLS — padrão obrigatório
 
 ```sql
-create or replace function auth.user_tenant_id()
-returns uuid language sql stable security definer as $$
+-- Helpers no schema public (não auth) — auth é gerenciado pelo Supabase.
+-- search_path travado para evitar function hijacking.
+create or replace function public.user_tenant_id()
+returns uuid language sql stable security definer set search_path = public as $$
   select tenant_id from public.profiles where id = auth.uid()
 $$;
 
-create or replace function auth.user_role()
-returns user_role language sql stable security definer as $$
+create or replace function public.user_role()
+returns user_role language sql stable security definer set search_path = public as $$
   select role from public.profiles where id = auth.uid()
 $$;
 
@@ -323,17 +325,17 @@ alter table protocol_usage     enable row level security;
 
 create policy "tenant_isolation_select"
   on protocols for select
-  using (tenant_id = auth.user_tenant_id());
+  using (tenant_id = public.user_tenant_id());
 
 create policy "tenant_isolation_insert"
   on protocols for insert
-  with check (tenant_id = auth.user_tenant_id());
+  with check (tenant_id = public.user_tenant_id());
 
 create policy "curator_can_edit_drafts"
   on protocols for update
   using (
-    tenant_id = auth.user_tenant_id()
-    and (status = 'draft' or auth.user_role() in ('admin','gestor','publicador'))
+    tenant_id = public.user_tenant_id()
+    and (status = 'draft' or public.user_role() in ('admin','gestor','publicador'))
   );
 ```
 
