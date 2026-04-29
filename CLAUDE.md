@@ -28,6 +28,7 @@ PRD completo em `docs/PRD.md`. Quando este `CLAUDE.md` divergir do PRD, este arq
 4. **Mobile-first no visualizador. Desktop-first no editor.**
 5. **Multi-tenancy desde o dia 1.** Nunca commit sem RLS apropriado.
 6. **LGPD: nada de dado de paciente.** Apenas usuário e protocolo.
+7. **Leitura é pública por tenant; edição exige login.** Visualizador `/[tenant]/...` é aberto e indexável (ajuda profissional na ponta a achar via Google). `/admin/...` exige autenticação. Sem auto-cadastro: gestor convida editor por email.
 
 ---
 
@@ -65,25 +66,27 @@ PRD completo em `docs/PRD.md`. Quando este `CLAUDE.md` divergir do PRD, este arq
 ```
 /
 ├── app/
-│   ├── (auth)/                  # rotas públicas
+│   ├── (public)/                # SEM auth — leitura pública por tenant
+│   │   └── [tenant]/            # caucaia-ce, demo, …
+│   │       ├── page.tsx         # lista de protocolos publicados do tenant
+│   │       └── protocolos/
+│   │           └── [slug]/page.tsx  # visualizador read-only
+│   ├── (auth)/                  # login + recuperação
 │   │   ├── login/page.tsx
-│   │   └── signup/page.tsx
-│   ├── (app)/                   # rotas autenticadas
-│   │   ├── layout.tsx           # exige sessão
+│   │   └── recuperar/page.tsx   # solicitação de magic link de reset
+│   ├── (admin)/                 # COM auth — edição/configuração
+│   │   ├── layout.tsx           # auth guard + header
 │   │   ├── dashboard/page.tsx
-│   │   ├── protocols/
-│   │   │   ├── page.tsx         # lista
-│   │   │   ├── new/page.tsx     # criar
+│   │   ├── protocolos/
+│   │   │   ├── page.tsx         # lista (todos os status)
+│   │   │   ├── novo/page.tsx
 │   │   │   └── [id]/
-│   │   │       ├── page.tsx     # visualizador
-│   │   │       ├── edit/page.tsx# editor
-│   │   │       └── versions/page.tsx
-│   │   └── admin/
-│   │       ├── users/page.tsx
-│   │       └── tenant/page.tsx
-│   ├── api/                     # route handlers (apenas onde RSC não basta)
-│   ├── layout.tsx               # root layout
-│   └── page.tsx                 # landing
+│   │   │       ├── editar/page.tsx
+│   │   │       └── versoes/page.tsx
+│   │   └── usuarios/page.tsx    # gestor convida editores
+│   ├── api/                     # route handlers
+│   ├── layout.tsx               # root
+│   └── page.tsx                 # landing institucional pública (já existe)
 ├── proxy.ts                     # auth guard via @supabase/ssr (raiz, Next 16: era middleware.ts)
 ├── components/
 │   ├── ui/                      # shadcn (não editar manualmente; usar CLI)
@@ -341,6 +344,8 @@ create policy "curator_can_edit_drafts"
 
 > **Regra absoluta:** toda tabela nova precisa de `tenant_id` + RLS habilitada + ao menos uma policy SELECT, INSERT e UPDATE. Sem exceção.
 
+> **Leitura pública (Fase 2+):** `protocols`/`protocol_versions`/`attachments` aceitam SELECT do role `anon` quando `status='published'`. `protocol_usage` aceita INSERT do `anon` para registrar cliques no visualizador. Drafts e tabelas administrativas continuam só auth. Ver `0004_public_read_policies.sql`.
+
 ### 4.4. Triggers de auditoria e timestamp
 
 ```sql
@@ -421,21 +426,30 @@ Onboarding: após signup, criar `profile` com role `profissional` e ligar a um `
 
 ---
 
-### FASE 2 — Auth + Onboarding (objetivo: login funcional)
+### FASE 2 — Auth + Onboarding (objetivo: login admin + leitura pública)
+
+**Modelo:** sem auto-cadastro. Gestor convida editor por email no painel; senha é o método primário, magic link só pra reset. Leitura é pública por tenant (path prefix `/[tenant]`).
 
 **Tarefas:**
-1. Páginas `/login` e `/signup` com Shadcn `Form` + Zod.
-2. Magic link como método primário; senha como secundário.
-3. Server Action de signup que cria `profiles` row vinculado a tenant existente (via código de convite no MVP).
-4. Layout `(app)/layout.tsx` redireciona não-autenticado para `/login`.
-5. Header com nome do usuário + tenant + botão logout.
-6. Página `/dashboard` simples listando os 3 últimos protocolos do tenant.
+1. Migration `0004_public_read_policies.sql`: anon SELECT em published, anon INSERT em `protocol_usage`.
+2. Inicializar Shadcn/UI com tokens ViaSus (tema verde-floresta + Plex).
+3. Página `/login` (senha) + `/recuperar` (magic link de reset) com Shadcn Form + Zod.
+4. Server actions: `signInWithPassword`, `requestPasswordReset`, `signOut`.
+5. Reorganizar `app/` em `(public)`, `(auth)`, `(admin)`. Mover landing institucional pra root pública.
+6. `(admin)/layout.tsx` redireciona anônimo pra `/login`. Header com nome do usuário + tenant + logout.
+7. `(admin)/dashboard/page.tsx` — 3 protocolos mais recentes do tenant.
+8. `(admin)/usuarios/page.tsx` — gestor cria editor: server action chama `supabase.auth.admin.createUser` + insert em `profiles`. Senha temporária enviada por email (ou exibida na tela com warning de copiar uma vez).
+9. `(public)/[tenant]/page.tsx` — lista de protocolos publicados do tenant (resolução por subdomain, 404 se não existir).
+10. `lib/audit.ts` — helper que insere em `protocol_audit` com `(tenant_id, user_id, action, payload)`.
+11. Logar `user_login` e `user_invited` no audit.
 
 **Critério de aceitação:**
-- [ ] Signup cria user em `auth.users` + row em `profiles` com tenant correto.
-- [ ] Login persiste sessão entre reloads.
-- [ ] Acessar `/dashboard` sem login redireciona para `/login`.
-- [ ] Audit log registra evento de login.
+- [ ] Migration 0004 aplicada; `pnpm test:rls` continua passando + novo teste de leitura anônima passa.
+- [ ] `/login` aceita senha; `/recuperar` envia email de reset.
+- [ ] `/admin/dashboard` redireciona para `/login` quando anônimo.
+- [ ] Gestor cria editor em `/admin/usuarios` e o profile aparece em `profiles`.
+- [ ] `/caucaia-ce` (público) lista o protocolo DM2 quando ele estiver `published`.
+- [ ] Audit log registra `user_login` ao logar e `user_invited` ao convidar.
 
 ---
 
