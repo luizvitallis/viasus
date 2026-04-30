@@ -174,10 +174,149 @@ export async function saveProtocolGraph(payload: unknown): Promise<SaveResult> {
 }
 
 // ----------------------------------------------------------------------------
+// publishProtocol — congela live nodes/edges em protocol_versions e marca published
+// ----------------------------------------------------------------------------
+const PublishSchema = z.object({
+  protocolId: uuidish,
+  changeNote: z.string().max(500).optional(),
+});
+
+export interface PublishResult {
+  ok: boolean;
+  error?: string;
+  versionNumber?: number;
+}
+
+export async function publishProtocol(payload: unknown): Promise<PublishResult> {
+  const parsed = PublishSchema.safeParse(payload);
+  if (!parsed.success) {
+    return { ok: false, error: "Dados de publicação inválidos." };
+  }
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { ok: false, error: "Não autenticado." };
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("tenant_id, role")
+    .eq("id", user.id)
+    .single();
+  if (!profile) return { ok: false, error: "Perfil não encontrado." };
+
+  // Apenas gestor/publicador/admin podem publicar
+  if (!["gestor", "publicador", "admin"].includes(profile.role)) {
+    return { ok: false, error: "Seu papel não permite publicar." };
+  }
+
+  const { data: protocol } = await supabase
+    .from("protocols")
+    .select("id, tenant_id")
+    .eq("id", parsed.data.protocolId)
+    .single();
+  if (!protocol) return { ok: false, error: "Protocolo não encontrado." };
+  if (protocol.tenant_id !== profile.tenant_id) {
+    return { ok: false, error: "Cross-tenant negado." };
+  }
+
+  // Snapshot dos nós e arestas vivos
+  const [{ data: nodes }, { data: edges }] = await Promise.all([
+    supabase
+      .from("nodes")
+      .select("id, type, label, position_x, position_y, content, tags, calculator_type, links_to_protocol_id, encaminhamento_target_id")
+      .eq("protocol_id", protocol.id),
+    supabase
+      .from("edges")
+      .select("id, source_node_id, target_node_id, label, style, condition_expr")
+      .eq("protocol_id", protocol.id),
+  ]);
+
+  if (!nodes || nodes.length === 0) {
+    return { ok: false, error: "Não é possível publicar um protocolo sem nós." };
+  }
+
+  // Calcula version_number (max + 1)
+  const { data: latest } = await supabase
+    .from("protocol_versions")
+    .select("version_number")
+    .eq("protocol_id", protocol.id)
+    .order("version_number", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  const nextVersion = (latest?.version_number ?? 0) + 1;
+
+  // Marca versões anteriores como não-correntes
+  await supabase
+    .from("protocol_versions")
+    .update({ is_current: false })
+    .eq("protocol_id", protocol.id)
+    .eq("is_current", true);
+
+  // Cria nova versão com snapshot
+  const graph = {
+    nodes: nodes ?? [],
+    edges: edges ?? [],
+  };
+
+  const { data: newVersion, error: versionErr } = await supabase
+    .from("protocol_versions")
+    .insert({
+      protocol_id: protocol.id,
+      tenant_id: protocol.tenant_id,
+      version_number: nextVersion,
+      graph: graph as never,
+      change_note: parsed.data.changeNote ?? null,
+      published_by: user.id,
+      is_current: true,
+    })
+    .select("id, version_number")
+    .single();
+
+  if (versionErr || !newVersion) {
+    return {
+      ok: false,
+      error: versionErr?.message ?? "Erro ao criar versão.",
+    };
+  }
+
+  // Atualiza protocolo: status=published, active_version_id=nova
+  const { error: protoErr } = await supabase
+    .from("protocols")
+    .update({
+      status: "published",
+      active_version_id: newVersion.id,
+    })
+    .eq("id", protocol.id);
+
+  if (protoErr) {
+    return { ok: false, error: `Erro atualizando protocolo: ${protoErr.message}` };
+  }
+
+  // Audit log
+  await supabase.from("protocol_audit").insert({
+    tenant_id: protocol.tenant_id,
+    protocol_id: protocol.id,
+    user_id: user.id,
+    action: "publish",
+    payload: {
+      version_number: newVersion.version_number,
+      change_note: parsed.data.changeNote ?? null,
+      nodes_count: nodes.length,
+      edges_count: (edges ?? []).length,
+    } as never,
+  });
+
+  return { ok: true, versionNumber: newVersion.version_number };
+}
+
+// ----------------------------------------------------------------------------
 // updateProtocolMeta — alterar título/specialty/summary/tags (header do protocolo)
 // ----------------------------------------------------------------------------
 const MetaSchema = z.object({
-  protocolId: z.string().uuid(),
+  protocolId: uuidish,
   title: z.string().min(3).optional(),
   specialty: z.string().nullable().optional(),
   summary: z.string().nullable().optional(),

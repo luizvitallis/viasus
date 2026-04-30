@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { IBM_Plex_Sans, IBM_Plex_Serif, IBM_Plex_Mono } from "next/font/google";
 import "./globals.css";
 import { cn } from "@/lib/utils";
@@ -25,6 +25,13 @@ export const metadata: Metadata = {
   title: "ViaSus — Protocolos clínicos do SUS, navegáveis",
   description:
     "Plataforma multi-tenant que substitui PDFs de protocolos clínicos por fluxogramas interativos navegáveis. Linhas de Cuidado, PCDTs, Encaminhamento Regulado, POPs e Diretrizes municipais.",
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 5,
+  themeColor: "#fafaf7",
 };
 
 export default function RootLayout({

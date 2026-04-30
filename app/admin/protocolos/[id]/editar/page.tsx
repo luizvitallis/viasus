@@ -50,6 +50,12 @@ export default async function EditarProtocoloPage({ params }: PageProps) {
   if (!protocol) notFound();
   if (protocol.tenant_id !== profile.tenant_id) notFound();
 
+  const { data: tenant } = await supabase
+    .from("tenants")
+    .select("subdomain")
+    .eq("id", protocol.tenant_id)
+    .single();
+
   const [{ data: nodes }, { data: edges }] = await Promise.all([
     supabase
       .from("nodes")
@@ -72,6 +78,8 @@ export default async function EditarProtocoloPage({ params }: PageProps) {
           status: protocol.status,
           slug: protocol.slug,
         }}
+        tenantSubdomain={tenant?.subdomain ?? ""}
+        userRole={profile.role}
         initialNodes={(nodes ?? []).map((n) => ({
           id: n.id,
           type: n.type as NodeType,

@@ -20,7 +20,10 @@ import {
   ArrowLeft,
   CircleAlert,
   CircleCheck,
+  ExternalLink,
   Loader2,
+  Send,
+  X,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -29,7 +32,10 @@ import { getEdgeStyleProps } from "./edge-styles";
 import { EditorToolbar } from "./toolbar";
 import { PropertiesPanel } from "./properties-panel";
 import { applyDagreLayout } from "./dagre-layout";
-import { saveProtocolGraph } from "@/app/admin/protocolos/[id]/editar/actions";
+import {
+  publishProtocol,
+  saveProtocolGraph,
+} from "@/app/admin/protocolos/[id]/editar/actions";
 import {
   type NodeType,
   type EdgeStyle,
@@ -64,6 +70,8 @@ interface ProtocolEditorProps {
     status: string;
     slug: string;
   };
+  tenantSubdomain: string;
+  userRole: string;
   initialNodes: InitialNode[];
   initialEdges: InitialEdge[];
 }
@@ -110,9 +118,13 @@ export function ProtocolEditor(props: ProtocolEditorProps) {
 function ProtocolEditorInner({
   protocolId,
   protocolMeta,
+  tenantSubdomain,
+  userRole,
   initialNodes,
   initialEdges,
 }: ProtocolEditorProps) {
+  const canPublish = ["gestor", "publicador", "admin"].includes(userRole);
+
   const [nodes, setNodes, onNodesChange] = useNodesState(
     initialNodes.map(nodeFromInitial),
   );
@@ -125,6 +137,11 @@ function ProtocolEditorInner({
 
   const [saveState, setSaveState] = useState<SaveState>("idle");
   const [savedAt, setSavedAt] = useState<Date | null>(null);
+
+  const [currentStatus, setCurrentStatus] = useState(protocolMeta.status);
+  const [showPublishModal, setShowPublishModal] = useState(false);
+  const [publishing, setPublishing] = useState(false);
+  const [changeNote, setChangeNote] = useState("");
 
   // Marcador de mudança que é incrementado a cada interação user-driven
   const [dirtyTick, setDirtyTick] = useState(0);
@@ -317,6 +334,23 @@ function ProtocolEditorInner({
     return () => clearTimeout(timeout);
   }, [dirtyTick, saveState, protocolId, nodes, edges]);
 
+  const handlePublish = useCallback(async () => {
+    setPublishing(true);
+    const result = await publishProtocol({
+      protocolId,
+      changeNote: changeNote || undefined,
+    });
+    setPublishing(false);
+    if (result.ok) {
+      toast.success(`Publicado como versão ${result.versionNumber}.`);
+      setCurrentStatus("published");
+      setShowPublishModal(false);
+      setChangeNote("");
+    } else {
+      toast.error(result.error ?? "Erro ao publicar");
+    }
+  }, [protocolId, changeNote]);
+
   const selectedNode = useMemo(() => {
     if (!selectedNodeId) return null;
     const n = nodes.find((n) => n.id === selectedNodeId);
@@ -368,10 +402,116 @@ function ProtocolEditorInner({
         <div className="flex items-center gap-3 shrink-0">
           <SaveIndicator state={saveState} savedAt={savedAt} />
           <span className="hidden md:inline-flex items-center px-2 py-0.5 border-2 border-stone-900 font-mono text-[10px] uppercase tracking-[0.14em] text-stone-700 bg-stone-100">
-            {PROTOCOL_STATUS_LABEL[protocolMeta.status as keyof typeof PROTOCOL_STATUS_LABEL] ?? protocolMeta.status}
+            {PROTOCOL_STATUS_LABEL[currentStatus as keyof typeof PROTOCOL_STATUS_LABEL] ?? currentStatus}
           </span>
+          {currentStatus === "published" && (
+            <a
+              href={`/${tenantSubdomain}/protocolos/${protocolMeta.slug}`}
+              target="_blank"
+              rel="noopener"
+              className="hidden md:inline-flex items-center gap-1 text-sm text-stone-600 hover:text-emerald-800 transition-colors"
+            >
+              Ver pública
+              <ExternalLink className="size-3.5" />
+            </a>
+          )}
+          {canPublish && (
+            <button
+              type="button"
+              onClick={() => setShowPublishModal(true)}
+              disabled={saveState === "dirty" || saveState === "saving"}
+              className="inline-flex items-center gap-2 bg-emerald-800 hover:bg-emerald-900 disabled:bg-stone-400 text-stone-50 font-medium px-4 h-9 transition-colors"
+            >
+              <Send className="size-3.5" />
+              Publicar
+            </button>
+          )}
         </div>
       </header>
+
+      {showPublishModal && (
+        <div
+          className="fixed inset-0 z-50 bg-stone-900/60 flex items-center justify-center p-4"
+          onClick={() => !publishing && setShowPublishModal(false)}
+        >
+          <div
+            className="bg-white border-2 border-stone-900 max-w-lg w-full"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between border-b-2 border-stone-900 px-5 py-3">
+              <p className="font-mono text-xs uppercase tracking-[0.18em] text-stone-700">
+                Publicar protocolo
+              </p>
+              <button
+                type="button"
+                onClick={() => !publishing && setShowPublishModal(false)}
+                className="text-stone-500 hover:text-stone-900"
+                disabled={publishing}
+              >
+                <X className="size-4" />
+              </button>
+            </div>
+            <div className="p-5 space-y-4">
+              <p className="text-stone-700">
+                Esta ação cria uma versão imutável do estado atual do protocolo
+                e o torna visível em{" "}
+                <code className="font-mono text-sm bg-stone-100 px-1.5 py-0.5">
+                  /{tenantSubdomain}/protocolos/{protocolMeta.slug}
+                </code>
+                .
+              </p>
+              <div className="space-y-2">
+                <label
+                  htmlFor="change-note"
+                  className="text-sm font-medium text-stone-900"
+                >
+                  Nota de mudança (opcional)
+                </label>
+                <textarea
+                  id="change-note"
+                  rows={3}
+                  value={changeNote}
+                  onChange={(e) => setChangeNote(e.target.value)}
+                  placeholder='ex.: "atualizei o critério de encaminhamento conforme PCDT 2026"'
+                  className="w-full border-2 border-stone-300 px-3 py-2 text-sm focus-visible:border-emerald-800 focus-visible:outline-none resize-y"
+                  disabled={publishing}
+                />
+                <p className="text-xs text-stone-500">
+                  Aparece no histórico de versões.
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center justify-end gap-2 border-t border-stone-200 px-5 py-3 bg-stone-50">
+              <button
+                type="button"
+                onClick={() => setShowPublishModal(false)}
+                disabled={publishing}
+                className="px-4 h-9 border-2 border-stone-300 hover:border-stone-900 font-medium text-sm transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={handlePublish}
+                disabled={publishing}
+                className="inline-flex items-center gap-2 bg-emerald-800 hover:bg-emerald-900 disabled:bg-stone-400 text-stone-50 font-medium px-4 h-9 transition-colors"
+              >
+                {publishing ? (
+                  <>
+                    <Loader2 className="size-4 animate-spin" />
+                    Publicando…
+                  </>
+                ) : (
+                  <>
+                    <Send className="size-4" />
+                    Confirmar publicação
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="flex-1 flex min-h-0">
         <EditorToolbar onAddNode={onAddNode} onAutoLayout={onAutoLayout} />
