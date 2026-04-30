@@ -1,11 +1,12 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ReactFlow,
   ReactFlowProvider,
   Background,
   Controls,
+  useReactFlow,
   type Edge,
   type Node,
 } from "@xyflow/react";
@@ -100,6 +101,8 @@ function ProtocolViewerInner({
   edges: initialEdges,
 }: ProtocolViewerProps) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const flow = useReactFlow();
+  const isFirstRender = useRef(true);
 
   // Track open_protocol uma única vez ao montar
   useEffect(() => {
@@ -111,6 +114,21 @@ function ProtocolViewerInner({
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Quando o painel abre ou fecha, o canvas muda de largura. Re-fit pra
+  // o profissional não perder visibilidade do fluxograma. Espera ~280ms
+  // pra deixar a transição CSS terminar antes de calcular o novo bbox.
+  const isPanelOpen = Boolean(selectedId);
+  useEffect(() => {
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      return;
+    }
+    const t = setTimeout(() => {
+      flow.fitView({ padding: 0.08, duration: 280, maxZoom: 1.2 });
+    }, 280);
+    return () => clearTimeout(t);
+  }, [isPanelOpen, flow]);
 
   const xyNodes = useMemo<Node[]>(
     () => initialNodes.map(nodeFromViewer),
