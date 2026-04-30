@@ -2,21 +2,55 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowRight } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
+import type { ProtocolType } from "@/types/domain";
 
 interface TenantPageProps {
   params: Promise<{ tenant: string }>;
+  searchParams: Promise<{ tipo?: string }>;
 }
 
-const typeLabel: Record<string, string> = {
+const TABS: {
+  value: ProtocolType;
+  label: string;
+  description: string;
+}[] = [
+  {
+    value: "linha_cuidado",
+    label: "Linhas de Cuidado",
+    description:
+      "Itinerários terapêuticos para condições crônicas, articulando APS, atenção especializada e hospitalar.",
+  },
+  {
+    value: "pcdt",
+    label: "PCDTs",
+    description:
+      "Protocolos Clínicos e Diretrizes Terapêuticas, navegáveis por critério de elegibilidade, esquema e seguimento.",
+  },
+  {
+    value: "encaminhamento",
+    label: "Encaminhamentos",
+    description:
+      "Critérios objetivos para encaminhamento à atenção especializada, com sinais, sintomas e exames.",
+  },
+  {
+    value: "pop",
+    label: "Administrativos",
+    description:
+      "Fluxos administrativos: quem encaminha, em qual sistema, quais documentos anexar e levar.",
+  },
+];
+
+const typeShortLabel: Record<string, string> = {
   linha_cuidado: "Linha de Cuidado",
   pcdt: "PCDT",
-  encaminhamento: "Encaminhamento Regulado",
-  pop: "POP",
+  encaminhamento: "Encaminhamento",
+  pop: "Administrativo",
   diretriz: "Diretriz",
 };
 
-export async function generateMetadata({ params }: TenantPageProps) {
+export async function generateMetadata({ params, searchParams }: TenantPageProps) {
   const { tenant } = await params;
+  const { tipo } = await searchParams;
   const supabase = await createClient();
   const { data } = await supabase
     .from("tenants")
@@ -28,14 +62,21 @@ export async function generateMetadata({ params }: TenantPageProps) {
     return { title: "Município não encontrado — ViaSus" };
   }
 
+  const tab = TABS.find((t) => t.value === tipo);
+  const suffix = tab ? ` · ${tab.label}` : "";
+
   return {
-    title: `${data.name} — ViaSus`,
+    title: `${data.name}${suffix} — ViaSus`,
     description: `Protocolos clínicos publicados de ${data.name}.`,
   };
 }
 
-export default async function TenantPage({ params }: TenantPageProps) {
+export default async function TenantPage({
+  params,
+  searchParams,
+}: TenantPageProps) {
   const { tenant } = await params;
+  const { tipo } = await searchParams;
   const supabase = await createClient();
 
   const { data: tenantRow } = await supabase
@@ -46,11 +87,28 @@ export default async function TenantPage({ params }: TenantPageProps) {
 
   if (!tenantRow) notFound();
 
+  // Aba ativa: a especificada na URL ou a primeira por padrão
+  const activeTab = TABS.find((t) => t.value === tipo) ?? TABS[0];
+
+  // Conta total por aba (pra mostrar badge nas tabs e header)
+  const { data: allPublished } = await supabase
+    .from("protocols")
+    .select("id, type")
+    .eq("tenant_id", tenantRow.id)
+    .eq("status", "published");
+
+  const counts: Record<string, number> = {};
+  for (const p of allPublished ?? []) {
+    counts[p.type] = (counts[p.type] ?? 0) + 1;
+  }
+
+  // Lista filtrada pela aba ativa
   const { data: protocols } = await supabase
     .from("protocols")
     .select("id, title, slug, type, specialty, summary, updated_at")
     .eq("tenant_id", tenantRow.id)
     .eq("status", "published")
+    .eq("type", activeTab.value)
     .order("updated_at", { ascending: false });
 
   return (
@@ -68,16 +126,58 @@ export default async function TenantPage({ params }: TenantPageProps) {
       <main className="flex-1">
         {/* Hero do tenant */}
         <section className="border-b-2 border-stone-900">
-          <div className="mx-auto max-w-6xl px-6 pt-16 pb-12 sm:pt-24 sm:pb-16">
+          <div className="mx-auto max-w-6xl px-6 pt-12 pb-8 sm:pt-20 sm:pb-12">
             <p className="font-mono text-xs uppercase tracking-[0.18em] text-stone-500 mb-4">
               Protocolos clínicos · /{tenantRow.subdomain}
             </p>
             <h1 className="font-serif font-semibold text-stone-950 leading-[0.98] tracking-tight text-[clamp(2.5rem,7vw,5.5rem)]">
               {tenantRow.name}
             </h1>
-            <p className="mt-6 max-w-2xl text-stone-700 text-lg leading-relaxed">
-              {protocols?.length ?? 0} protocolo(s) publicado(s) no momento.
-              Clique em qualquer um para abrir o fluxograma navegável.
+          </div>
+
+          {/* Abas */}
+          <nav
+            aria-label="Categorias de protocolo"
+            className="mx-auto max-w-6xl px-6"
+          >
+            <ul className="flex flex-wrap gap-0 border-x-2 border-t-2 border-stone-900">
+              {TABS.map((t) => {
+                const active = t.value === activeTab.value;
+                const count = counts[t.value] ?? 0;
+                return (
+                  <li key={t.value} className="flex-1 min-w-[140px]">
+                    <Link
+                      href={`/${tenantRow.subdomain}?tipo=${t.value}`}
+                      aria-current={active ? "page" : undefined}
+                      className={`flex flex-col items-start gap-1 px-4 py-3 border-b-2 ${
+                        active
+                          ? "bg-stone-900 text-stone-50 border-stone-900"
+                          : "bg-stone-50 text-stone-700 border-stone-300 hover:bg-stone-100"
+                      } transition-colors`}
+                    >
+                      <span className="font-mono text-[11px] uppercase tracking-[0.18em]">
+                        {t.label}
+                      </span>
+                      <span
+                        className={`font-serif text-2xl font-medium ${
+                          active ? "text-stone-50" : "text-stone-900"
+                        }`}
+                      >
+                        {count}
+                      </span>
+                    </Link>
+                  </li>
+                );
+              })}
+            </ul>
+          </nav>
+        </section>
+
+        {/* Descrição da aba ativa */}
+        <section className="bg-stone-100 border-b-2 border-stone-900">
+          <div className="mx-auto max-w-6xl px-6 py-6">
+            <p className="text-stone-700 max-w-3xl leading-relaxed">
+              {activeTab.description}
             </p>
           </div>
         </section>
@@ -98,7 +198,7 @@ export default async function TenantPage({ params }: TenantPageProps) {
                       </div>
                       <div className="lg:col-span-7">
                         <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-stone-500">
-                          {typeLabel[p.type] ?? p.type}
+                          {typeShortLabel[p.type] ?? p.type}
                           {p.specialty ? ` · ${p.specialty}` : ""}
                         </p>
                         <h2 className="font-serif font-medium text-2xl text-stone-950 mt-2 group-hover:text-emerald-800 transition-colors">
@@ -131,11 +231,15 @@ export default async function TenantPage({ params }: TenantPageProps) {
             ) : (
               <div className="border-2 border-dashed border-stone-300 px-6 py-16 text-center">
                 <p className="font-serif text-2xl text-stone-700 mb-2">
-                  Nenhum protocolo publicado ainda.
+                  Nenhum {activeTab.label.toLowerCase().replace(/s$/, "")}{" "}
+                  publicado ainda.
                 </p>
                 <p className="text-stone-500 max-w-md mx-auto">
-                  Os curadores do tenant {tenantRow.name} estão preparando os
-                  primeiros fluxogramas. Volte em breve.
+                  {activeTab.value === "encaminhamento"
+                    ? "Os protocolos de encaminhamento interativos chegam na próxima fase."
+                    : activeTab.value === "pop"
+                      ? "Os fluxos administrativos chegam na próxima fase."
+                      : `Os curadores de ${tenantRow.name} estão preparando esse conteúdo. Volte em breve.`}
                 </p>
               </div>
             )}
