@@ -563,4 +563,16 @@ pnpm lint
 
 ---
 
-**Última atualização:** Sessão inicial — Fase 0 em execução. Next.js 16.2.4 / React 19.2.4 / Tailwind 4.2.4.
+**Última atualização:** MVP completo. Fases 0–7 em produção. Stack ativo: Next.js 16.2.4 / React 19.2.4 / Tailwind 4.2.4.
+
+**Status das fases:**
+- ✅ Fase 0 — Foundation
+- ✅ Fase 1 — Schema + RLS + Seed (migrations 0001/0002/0003 aplicadas)
+- ✅ Fase 2 — Auth + Onboarding (login admin, leitura pública, convite editor; migration 0004 aplicada)
+- ✅ Fase 3 — Editor de fluxograma (xyflow + TipTap + auto-save)
+- ✅ Fase 4 — Visualizador público (mobile-first, bottom sheet, tracking)
+- ✅ Fase 5 — Versões + Auditoria + Métricas
+- ✅ Fase 6 — Anexos via Supabase Storage (migration 0005 aplicada)
+- ✅ Fase 7 — Busca full-text PT-BR (Cmd+K)
+
+**Próximos passos sugeridos (V1):** rollout interno na SMS Caucaia, calculadoras clínicas embutidas, fork de protocolos entre tenants, diff visual entre versões, integração com Encaminhamento Regulado, modo offline (Service Worker).
