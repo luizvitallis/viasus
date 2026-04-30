@@ -178,8 +178,9 @@ function ProtocolViewerInner({
           // Sem fitView (que centralizaria e cortaria o topo). Os nós já
           // foram normalizados no server pra começar em (0, 0). O viewport
           // inicial posiciona o canto superior-esquerdo do grafo no topo
-          // do canvas com pequena margem. Zoom 1.0 = nós em tamanho real.
-          defaultViewport={{ x: 30, y: 24, zoom: 1 }}
+          // do canvas com pequena margem. Zoom 0.9 = ligeiramente reduzido
+          // pra caber mais nós na viewport sem perder legibilidade.
+          defaultViewport={{ x: 30, y: 24, zoom: 0.9 }}
           minZoom={0.3}
           maxZoom={2.5}
           panOnScroll
