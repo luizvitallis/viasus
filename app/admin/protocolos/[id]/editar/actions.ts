@@ -174,6 +174,104 @@ export async function saveProtocolGraph(payload: unknown): Promise<SaveResult> {
 }
 
 // ----------------------------------------------------------------------------
+// saveReferralData — salva a árvore JSONB de protocolos de encaminhamento
+// ----------------------------------------------------------------------------
+const ReferralCategorySchema = z.enum([
+  "condicao",
+  "sinal",
+  "sintoma",
+  "exame",
+  "achado",
+]);
+
+type ReferralNodeShape = {
+  id: string;
+  label: string;
+  text_when_checked?: string;
+  category?: z.infer<typeof ReferralCategorySchema> | null;
+  children?: ReferralNodeShape[];
+};
+
+const ReferralNodeSchema: z.ZodType<ReferralNodeShape> = z.lazy(() =>
+  z.object({
+    id: uuidish,
+    label: z.string().default(""),
+    text_when_checked: z.string().optional(),
+    category: ReferralCategorySchema.nullable().optional(),
+    children: z.array(ReferralNodeSchema).optional(),
+  }),
+);
+
+const ReferralDataSchema = z.object({
+  introduction: z.string().optional(),
+  closing: z.string().optional(),
+  tree: z.array(ReferralNodeSchema),
+});
+
+const SaveReferralSchema = z.object({
+  protocolId: uuidish,
+  data: ReferralDataSchema,
+});
+
+export async function saveReferralData(payload: unknown): Promise<SaveResult> {
+  const parsed = SaveReferralSchema.safeParse(payload);
+  if (!parsed.success) {
+    console.error(
+      "[saveReferralData] payload inválido:",
+      JSON.stringify(parsed.error.issues, null, 2),
+    );
+    const first = parsed.error.issues[0];
+    return {
+      ok: false,
+      error: `Payload inválido em ${first?.path?.join(".") ?? "?"}: ${first?.message ?? "—"}`,
+    };
+  }
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { ok: false, error: "Não autenticado." };
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("tenant_id, role")
+    .eq("id", user.id)
+    .single();
+  if (!profile) return { ok: false, error: "Perfil não encontrado." };
+  if (!["curador", "publicador", "gestor", "admin"].includes(profile.role)) {
+    return { ok: false, error: "Sem permissão para editar." };
+  }
+
+  const { data: protocol } = await supabase
+    .from("protocols")
+    .select("id, tenant_id, type")
+    .eq("id", parsed.data.protocolId)
+    .single();
+  if (!protocol) return { ok: false, error: "Protocolo não encontrado." };
+  if (protocol.tenant_id !== profile.tenant_id) {
+    return { ok: false, error: "Cross-tenant negado." };
+  }
+  if (protocol.type !== "encaminhamento") {
+    return {
+      ok: false,
+      error: "Esse tipo de protocolo não suporta dados de encaminhamento.",
+    };
+  }
+
+  const { error } = await supabase
+    .from("protocols")
+    .update({
+      referral_data: parsed.data.data as never,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", protocol.id);
+
+  if (error) return { ok: false, error: error.message };
+  return { ok: true, savedAt: new Date().toISOString() };
+}
+
+// ----------------------------------------------------------------------------
 // publishProtocol — congela live nodes/edges em protocol_versions e marca published
 // ----------------------------------------------------------------------------
 const PublishSchema = z.object({
@@ -213,7 +311,7 @@ export async function publishProtocol(payload: unknown): Promise<PublishResult> 
 
   const { data: protocol } = await supabase
     .from("protocols")
-    .select("id, tenant_id")
+    .select("id, tenant_id, type, referral_data")
     .eq("id", parsed.data.protocolId)
     .single();
   if (!protocol) return { ok: false, error: "Protocolo não encontrado." };
@@ -221,7 +319,7 @@ export async function publishProtocol(payload: unknown): Promise<PublishResult> 
     return { ok: false, error: "Cross-tenant negado." };
   }
 
-  // Snapshot dos nós e arestas vivos
+  // Snapshot dos nós e arestas vivos (vazio se for encaminhamento)
   const [{ data: nodes }, { data: edges }] = await Promise.all([
     supabase
       .from("nodes")
@@ -233,7 +331,20 @@ export async function publishProtocol(payload: unknown): Promise<PublishResult> 
       .eq("protocol_id", protocol.id),
   ]);
 
-  if (!nodes || nodes.length === 0) {
+  // Validação de "tem conteúdo pra publicar":
+  //   - Tipos de fluxograma (linha_cuidado, pcdt, pop, diretriz): exige nós
+  //   - Encaminhamento: exige árvore não-vazia em referral_data
+  if (protocol.type === "encaminhamento") {
+    const refTree = (protocol.referral_data as { tree?: unknown[] } | null)
+      ?.tree;
+    if (!refTree || refTree.length === 0) {
+      return {
+        ok: false,
+        error:
+          "Adicione ao menos uma condição/achado antes de publicar.",
+      };
+    }
+  } else if (!nodes || nodes.length === 0) {
     return { ok: false, error: "Não é possível publicar um protocolo sem nós." };
   }
 
@@ -255,10 +366,13 @@ export async function publishProtocol(payload: unknown): Promise<PublishResult> 
     .eq("protocol_id", protocol.id)
     .eq("is_current", true);
 
-  // Cria nova versão com snapshot
+  // Cria nova versão com snapshot — inclui o referral_data se houver,
+  // pra que o visualizador (Phase 4/9) renderize a partir do snapshot
+  // imutável e não da live data.
   const graph = {
     nodes: nodes ?? [],
     edges: edges ?? [],
+    referral_data: protocol.referral_data ?? null,
   };
 
   const { data: newVersion, error: versionErr } = await supabase
@@ -304,8 +418,9 @@ export async function publishProtocol(payload: unknown): Promise<PublishResult> 
     payload: {
       version_number: newVersion.version_number,
       change_note: parsed.data.changeNote ?? null,
-      nodes_count: nodes.length,
+      nodes_count: (nodes ?? []).length,
       edges_count: (edges ?? []).length,
+      type: protocol.type,
     } as never,
   });
 

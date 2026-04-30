@@ -34,6 +34,39 @@ export type TipTapDoc = {
   content: unknown[];
 };
 
+/**
+ * Protocolos de Encaminhamento — árvore hierárquica de condições/achados
+ * com gerador de texto. Salva em `protocols.referral_data` (JSONB).
+ */
+export type ReferralCategory =
+  | "condicao"
+  | "sinal"
+  | "sintoma"
+  | "exame"
+  | "achado";
+
+export interface ReferralNode {
+  id: string;
+  label: string;
+  text_when_checked?: string;
+  category?: ReferralCategory | null;
+  children?: ReferralNode[];
+}
+
+export interface ReferralData {
+  introduction?: string;
+  closing?: string;
+  tree: ReferralNode[];
+}
+
+export const REFERRAL_CATEGORY_LABEL: Record<ReferralCategory, string> = {
+  condicao: "Condição",
+  sinal: "Sinal",
+  sintoma: "Sintoma",
+  exame: "Exame",
+  achado: "Achado",
+};
+
 export const NODE_TYPES: NodeType[] = [
   "ponto_atencao",
   "decisao",

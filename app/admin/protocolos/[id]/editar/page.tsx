@@ -2,7 +2,8 @@ import { notFound, redirect } from "next/navigation";
 import { Toaster } from "sonner";
 import { createClient } from "@/lib/supabase/server";
 import { ProtocolEditor } from "@/components/editor/protocol-editor";
-import type { EdgeStyle, NodeType } from "@/types/domain";
+import { ReferralEditor } from "@/components/editor/referral-editor";
+import type { EdgeStyle, NodeType, ReferralData } from "@/types/domain";
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -12,10 +13,6 @@ export const metadata = {
   title: "Editor — ViaSus",
 };
 
-// Editor é client-heavy: desligamos o layout administrativo padrão (header)
-// usando uma rota com layout próprio. Aqui retornamos apenas o cliente
-// dentro do `<main>` do AdminLayout. O layout do admin já tem header de 64px,
-// mas o editor é uma "tela cheia" — então ele se ajusta dentro do main.
 export default async function EditarProtocoloPage({ params }: PageProps) {
   const { id } = await params;
   const supabase = await createClient();
@@ -44,7 +41,7 @@ export default async function EditarProtocoloPage({ params }: PageProps) {
 
   const { data: protocol } = await supabase
     .from("protocols")
-    .select("id, title, slug, type, status, tenant_id")
+    .select("id, title, slug, type, status, tenant_id, referral_data")
     .eq("id", id)
     .single();
   if (!protocol) notFound();
@@ -55,6 +52,26 @@ export default async function EditarProtocoloPage({ params }: PageProps) {
     .select("subdomain")
     .eq("id", protocol.tenant_id)
     .single();
+
+  // Dispatch por tipo:
+  // - encaminhamento  → ReferralEditor (checklist hierárquico)
+  // - outros          → ProtocolEditor (xyflow)
+  if (protocol.type === "encaminhamento") {
+    return (
+      <ReferralEditor
+        protocolId={protocol.id}
+        protocolMeta={{
+          title: protocol.title,
+          type: protocol.type,
+          status: protocol.status,
+          slug: protocol.slug,
+        }}
+        tenantSubdomain={tenant?.subdomain ?? ""}
+        userRole={profile.role}
+        initialData={(protocol.referral_data as ReferralData | null) ?? null}
+      />
+    );
+  }
 
   const [{ data: nodes }, { data: edges }] = await Promise.all([
     supabase

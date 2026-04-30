@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { ProtocolViewer } from "@/components/viewer/protocol-viewer";
+import { ReferralViewer } from "@/components/viewer/referral-viewer";
 import {
   attachmentIcon,
   formatBytes,
@@ -18,6 +19,7 @@ import {
   PROTOCOL_TYPE_LABEL,
   type EdgeStyle,
   type NodeType,
+  type ReferralData,
 } from "@/types/domain";
 
 interface PageProps {
@@ -47,6 +49,7 @@ interface SnapshotEdge {
 interface Snapshot {
   nodes?: SnapshotNode[];
   edges?: SnapshotEdge[];
+  referral_data?: ReferralData | null;
 }
 
 export async function generateMetadata({ params }: PageProps) {
@@ -160,28 +163,50 @@ export default async function ProtocolViewerPage({ params }: PageProps) {
         </div>
       </section>
 
-      {/* Canvas */}
-      <ProtocolViewer
-        tenantId={tenantRow.id}
-        protocolId={protocol.id}
-        versionId={protocol.active_version_id ?? null}
-        nodes={(snapshot.nodes ?? []).map((n) => ({
-          id: n.id,
-          type: n.type as NodeType,
-          label: n.label,
-          position_x: n.position_x,
-          position_y: n.position_y,
-          content: n.content,
-          tags: Array.isArray(n.tags) ? n.tags : [],
-        }))}
-        edges={(snapshot.edges ?? []).map((e) => ({
-          id: e.id,
-          source_node_id: e.source_node_id,
-          target_node_id: e.target_node_id,
-          label: e.label,
-          style: e.style as EdgeStyle,
-        }))}
-      />
+      {/* Canvas — dispatch por tipo:
+            - encaminhamento → ReferralViewer (checklist + gerador de texto)
+            - outros         → ProtocolViewer (xyflow read-only) */}
+      {protocol.type === "encaminhamento" ? (
+        snapshot.referral_data ? (
+          <ReferralViewer
+            tenantId={tenantRow.id}
+            protocolId={protocol.id}
+            versionId={protocol.active_version_id ?? null}
+            data={snapshot.referral_data}
+          />
+        ) : (
+          <div className="flex-1 flex items-center justify-center p-8">
+            <div className="border-2 border-dashed border-stone-300 px-6 py-12 text-center max-w-md">
+              <p className="font-serif text-2xl text-stone-700 mb-2">
+                Este protocolo ainda não tem itens publicados.
+              </p>
+              <p className="text-stone-500">Volte em breve.</p>
+            </div>
+          </div>
+        )
+      ) : (
+        <ProtocolViewer
+          tenantId={tenantRow.id}
+          protocolId={protocol.id}
+          versionId={protocol.active_version_id ?? null}
+          nodes={(snapshot.nodes ?? []).map((n) => ({
+            id: n.id,
+            type: n.type as NodeType,
+            label: n.label,
+            position_x: n.position_x,
+            position_y: n.position_y,
+            content: n.content,
+            tags: Array.isArray(n.tags) ? n.tags : [],
+          }))}
+          edges={(snapshot.edges ?? []).map((e) => ({
+            id: e.id,
+            source_node_id: e.source_node_id,
+            target_node_id: e.target_node_id,
+            label: e.label,
+            style: e.style as EdgeStyle,
+          }))}
+        />
+      )}
 
       {/* Anexos */}
       {attachments && attachments.length > 0 && (
