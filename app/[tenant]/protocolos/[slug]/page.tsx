@@ -1,8 +1,19 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft } from "lucide-react";
+import {
+  ArrowLeft,
+  Download,
+  File as FileIcon,
+  FileText,
+  Image as ImageIcon,
+} from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { ProtocolViewer } from "@/components/viewer/protocol-viewer";
+import {
+  attachmentIcon,
+  formatBytes,
+  publicAttachmentUrl,
+} from "@/lib/storage";
 import {
   PROTOCOL_TYPE_LABEL,
   type EdgeStyle,
@@ -106,6 +117,13 @@ export default async function ProtocolViewerPage({ params }: PageProps) {
     }
   }
 
+  // Anexos do protocolo (RLS 0004 permite anon SELECT em anexos de published)
+  const { data: attachments } = await supabase
+    .from("attachments")
+    .select("id, filename, storage_path, mime_type, size_bytes")
+    .eq("protocol_id", protocol.id)
+    .order("uploaded_at", { ascending: true });
+
   return (
     <div className="min-h-screen flex flex-col bg-stone-50">
       {/* Top bar institucional */}
@@ -164,6 +182,52 @@ export default async function ProtocolViewerPage({ params }: PageProps) {
           style: e.style as EdgeStyle,
         }))}
       />
+
+      {/* Anexos */}
+      {attachments && attachments.length > 0 && (
+        <section className="border-t-2 border-stone-900 bg-stone-50">
+          <div className="mx-auto max-w-6xl px-4 sm:px-6 py-10">
+            <p className="font-mono text-xs uppercase tracking-[0.18em] text-stone-500 mb-4">
+              Documentos anexados
+            </p>
+            <ul className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {attachments.map((a) => {
+                const icon = attachmentIcon(a.mime_type);
+                const Icon =
+                  icon === "pdf"
+                    ? FileText
+                    : icon === "image"
+                      ? ImageIcon
+                      : FileIcon;
+                const url = publicAttachmentUrl(a.storage_path);
+                return (
+                  <li key={a.id}>
+                    <a
+                      href={url}
+                      target="_blank"
+                      rel="noopener"
+                      className="flex items-center gap-3 px-4 py-3 border-2 border-stone-300 hover:border-stone-900 hover:bg-white transition-colors group"
+                    >
+                      <Icon
+                        className={`size-5 shrink-0 ${icon === "pdf" ? "text-red-700" : "text-stone-700"}`}
+                      />
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-stone-900 truncate group-hover:text-emerald-800 transition-colors">
+                          {a.filename}
+                        </p>
+                        <p className="text-xs text-stone-500 font-mono">
+                          {a.mime_type} · {formatBytes(a.size_bytes)}
+                        </p>
+                      </div>
+                      <Download className="size-4 text-stone-400 group-hover:text-emerald-800 transition-colors" />
+                    </a>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        </section>
+      )}
 
       {/* Rodapé com info da versão */}
       <footer className="border-t-2 border-stone-900 bg-stone-100">
