@@ -151,21 +151,32 @@ export default async function ProtocolViewerPage({ params }: PageProps) {
         </div>
       </header>
 
-      {/* Cabeçalho do protocolo */}
+      {/* Cabeçalho compacto do protocolo — foco é o fluxograma abaixo */}
       <section className="border-b-2 border-stone-900 bg-stone-50">
-        <div className="mx-auto max-w-6xl px-4 sm:px-6 py-6 sm:py-8">
-          <p className="font-mono text-xs uppercase tracking-[0.18em] text-stone-500 mb-2">
+        <div className="mx-auto max-w-6xl px-4 sm:px-6 py-3 sm:py-4">
+          <p className="font-mono text-[10px] sm:text-xs uppercase tracking-[0.18em] text-stone-500 mb-1">
             <span className="inline-block w-5 h-px bg-[var(--color-caucaia-red)] align-middle mr-2" />
             {PROTOCOL_TYPE_LABEL[protocol.type as keyof typeof PROTOCOL_TYPE_LABEL] ?? protocol.type}
             {protocol.specialty ? ` · ${protocol.specialty}` : ""}
           </p>
-          <h1 className="font-serif font-semibold text-3xl sm:text-4xl text-stone-950 leading-tight">
+          <h1 className="font-serif font-semibold text-xl sm:text-2xl text-stone-950 leading-tight">
             {protocol.title}
           </h1>
           {protocol.summary && (
-            <p className="mt-3 text-stone-700 max-w-3xl leading-relaxed">
-              {protocol.summary}
-            </p>
+            <details className="mt-1 group">
+              <summary className="text-sm text-stone-600 cursor-pointer hover:text-stone-900 list-none flex items-center gap-1.5 marker:hidden">
+                <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-stone-500 group-open:hidden">
+                  ver resumo
+                </span>
+                <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-stone-500 hidden group-open:inline">
+                  ocultar resumo
+                </span>
+                <span className="text-stone-400 group-open:rotate-90 transition-transform">›</span>
+              </summary>
+              <p className="mt-2 text-sm text-stone-700 max-w-3xl leading-relaxed">
+                {protocol.summary}
+              </p>
+            </details>
           )}
         </div>
       </section>

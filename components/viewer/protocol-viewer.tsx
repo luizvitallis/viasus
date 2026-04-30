@@ -166,7 +166,10 @@ function ProtocolViewerInner({
         }
         .viewer-canvas .react-flow__node { cursor: pointer; }
       `}</style>
-      <div className="h-[70vh] sm:h-[75vh] lg:h-[80vh] min-h-[480px]">
+      {/* Canvas dominante — quase fullscreen menos o header compacto.
+           Calc descontando: top bar (~30px) + faixa decorativa (~6px) +
+           cabeçalho do protocolo (~80-100px) + footer (~150px no desktop) */}
+      <div className="h-[calc(100vh-220px)] min-h-[520px] sm:h-[calc(100vh-200px)]">
         <ReactFlow
           nodes={xyNodes}
           edges={xyEdges}
