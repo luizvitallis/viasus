@@ -15,8 +15,19 @@ const NODE_TYPES = [
 
 const EDGE_STYLES = ["normal", "urgente", "condicional"] as const;
 
+// Zod 4 valida UUID estritamente (exige version digit 1-5). Os UUIDs do seed
+// foram criados com prefixos legíveis (33333333-...) para facilitar debug e
+// não passam nessa regra. Como o Postgres já valida o formato no INSERT,
+// relaxamos para checagem estrutural (8-4-4-4-12 hex).
+const uuidish = z
+  .string()
+  .regex(
+    /^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i,
+    "uuid inválido",
+  );
+
 const NodeSchema = z.object({
-  id: z.string().uuid(),
+  id: uuidish,
   type: z.enum(NODE_TYPES),
   label: z.string().default(""),
   position_x: z.number(),
@@ -27,16 +38,16 @@ const NodeSchema = z.object({
 });
 
 const EdgeSchema = z.object({
-  id: z.string().uuid(),
-  source_node_id: z.string().uuid(),
-  target_node_id: z.string().uuid(),
+  id: uuidish,
+  source_node_id: uuidish,
+  target_node_id: uuidish,
   label: z.string().nullable().optional(),
   style: z.enum(EDGE_STYLES),
   condition_expr: z.unknown().nullable().optional(),
 });
 
 const PayloadSchema = z.object({
-  protocolId: z.string().uuid(),
+  protocolId: uuidish,
   nodes: z.array(NodeSchema),
   edges: z.array(EdgeSchema),
 });
@@ -50,7 +61,17 @@ export interface SaveResult {
 export async function saveProtocolGraph(payload: unknown): Promise<SaveResult> {
   const parsed = PayloadSchema.safeParse(payload);
   if (!parsed.success) {
-    return { ok: false, error: "Payload inválido." };
+    // Loga no servidor a estrutura completa do erro pra debug
+    console.error(
+      "[saveProtocolGraph] payload inválido:",
+      JSON.stringify(parsed.error.issues, null, 2),
+    );
+    const first = parsed.error.issues[0];
+    const path = first?.path?.join(".") ?? "?";
+    return {
+      ok: false,
+      error: `Payload inválido em ${path}: ${first?.message ?? "—"}`,
+    };
   }
 
   const supabase = await createClient();
