@@ -293,7 +293,9 @@ function ProtocolEditorInner({
             const styleEnum = patch.style as EdgeStyle;
             const props = getEdgeStyleProps(styleEnum);
             next.data = { ...(e.data ?? {}), style: styleEnum };
+            next.type = props.type;
             next.style = props.style;
+            next.markerEnd = props.markerEnd;
             next.labelStyle = props.labelStyle;
             next.labelBgStyle = props.labelBgStyle;
           }
