@@ -166,44 +166,62 @@ function ProtocolViewerInner({
         }
         .viewer-canvas .react-flow__node { cursor: pointer; }
       `}</style>
-      {/* Canvas dominante — quase fullscreen menos o header compacto.
-           Header ~50px + top bar ~30px + footer ~80px. */}
-      <div className="h-[calc(100vh-160px)] min-h-[520px]">
-        <ReactFlow
-          nodes={xyNodes}
-          edges={xyEdges}
-          nodeTypes={viaNodeTypes}
-          onNodeClick={handleNodeClick}
-          onPaneClick={() => setSelectedId(null)}
-          // Sem fitView (que centralizaria e cortaria o topo). Os nós já
-          // foram normalizados no server pra começar em (0, 0). O viewport
-          // inicial posiciona o canto superior-esquerdo do grafo no topo
-          // do canvas com pequena margem. Zoom 0.9 = ligeiramente reduzido
-          // pra caber mais nós na viewport sem perder legibilidade.
-          defaultViewport={{ x: 30, y: 24, zoom: 0.9 }}
-          minZoom={0.3}
-          maxZoom={2.5}
-          panOnScroll
-          panOnDrag
-          zoomOnPinch
-          zoomOnDoubleClick={false}
-          nodesDraggable={false}
-          nodesConnectable={false}
-          edgesFocusable={false}
-          proOptions={{ hideAttribution: true }}
-        >
-          <Background gap={24} size={1} color="#d6d3d1" />
-          <Controls
-            position="bottom-right"
-            showInteractive={false}
-            className="!shadow-none !border-2 !border-stone-900"
-          />
-        </ReactFlow>
+
+      {/* Layout flex: canvas + (opcional) painel lateral inline em desktop.
+           Quando o painel abre, o canvas encolhe automaticamente.
+           Quando fecha, volta a ocupar 100%. */}
+      <div className="h-[calc(100vh-160px)] min-h-[520px] flex">
+        <div className="flex-1 min-w-0 relative">
+          <ReactFlow
+            nodes={xyNodes}
+            edges={xyEdges}
+            nodeTypes={viaNodeTypes}
+            onNodeClick={handleNodeClick}
+            onPaneClick={() => setSelectedId(null)}
+            // Sem fitView (que centralizaria e cortaria o topo). Os nós já
+            // foram normalizados no server pra começar em (0, 0). O viewport
+            // inicial posiciona o canto superior-esquerdo do grafo no topo
+            // do canvas com pequena margem. Zoom 0.9 = ligeiramente reduzido
+            // pra caber mais nós na viewport sem perder legibilidade.
+            defaultViewport={{ x: 30, y: 24, zoom: 0.9 }}
+            minZoom={0.3}
+            maxZoom={2.5}
+            panOnScroll
+            panOnDrag
+            zoomOnPinch
+            zoomOnDoubleClick={false}
+            nodesDraggable={false}
+            nodesConnectable={false}
+            edgesFocusable={false}
+            proOptions={{ hideAttribution: true }}
+          >
+            <Background gap={24} size={1} color="#d6d3d1" />
+            <Controls
+              position="bottom-right"
+              showInteractive={false}
+              className="!shadow-none !border-2 !border-stone-900"
+            />
+          </ReactFlow>
+        </div>
+
+        {/* Painel lateral (desktop) — INLINE, divide largura com canvas */}
+        {selectedNode && (
+          <aside
+            className="hidden lg:flex flex-col w-[440px] shrink-0 border-l-2 border-stone-900 bg-white"
+            role="region"
+            aria-label="Conteúdo do nó"
+          >
+            <NodeSheetContent
+              node={selectedNode}
+              onClose={() => setSelectedId(null)}
+            />
+          </aside>
+        )}
       </div>
 
-      {/* Bottom sheet (mobile) / Side panel (desktop) */}
+      {/* Bottom sheet (mobile) — sobreposto, com scrim */}
       {selectedNode && (
-        <NodeSheet
+        <MobileBottomSheet
           node={selectedNode}
           onClose={() => setSelectedId(null)}
         />
@@ -217,9 +235,67 @@ interface NodeSheetProps {
   onClose: () => void;
 }
 
-function NodeSheet({ node, onClose }: NodeSheetProps) {
-  // Trava scroll do body enquanto sheet aberta
+/**
+ * Conteúdo do painel — header + body + tags. Sem positioning próprio,
+ * pra ser usado tanto inline (desktop side panel) quanto fixed (mobile
+ * bottom sheet).
+ */
+function NodeSheetContent({ node, onClose }: NodeSheetProps) {
+  return (
+    <>
+      <header className="flex items-center justify-between px-5 py-3 border-b-2 border-stone-900 shrink-0">
+        <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-stone-700">
+          {NODE_TYPE_LABEL[node.type]}
+        </p>
+        <button
+          type="button"
+          onClick={onClose}
+          className="text-stone-500 hover:text-stone-900 -mr-2 p-2"
+          aria-label="Fechar"
+        >
+          <X className="size-5" />
+        </button>
+      </header>
+
+      <div className="flex-1 overflow-y-auto px-5 py-4">
+        <h2 className="font-serif font-semibold text-2xl text-stone-950 leading-tight mb-4">
+          {node.label}
+        </h2>
+
+        <NodeContent content={node.content} />
+
+        {node.tags && node.tags.length > 0 && (
+          <div className="mt-6 pt-4 border-t border-stone-200">
+            <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-stone-500 mb-2">
+              Tags
+            </p>
+            <div className="flex flex-wrap gap-1.5">
+              {node.tags.map((tag) => (
+                <span
+                  key={tag}
+                  className="px-2 py-0.5 bg-stone-100 border border-stone-300 text-xs text-stone-700 font-mono"
+                >
+                  {tag}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    </>
+  );
+}
+
+/**
+ * Bottom sheet do mobile: fixed bottom, scrim, drag handle.
+ * Em desktop (lg+) NÃO renderiza nada — o painel lateral inline é
+ * desenhado separadamente no layout flex pai.
+ */
+function MobileBottomSheet({ node, onClose }: NodeSheetProps) {
+  // Trava scroll do body enquanto sheet aberta (apenas no mobile)
   useEffect(() => {
+    const isMobile = window.matchMedia("(max-width: 1023px)").matches;
+    if (!isMobile) return;
     document.body.style.overflow = "hidden";
     return () => {
       document.body.style.overflow = "";
@@ -227,73 +303,25 @@ function NodeSheet({ node, onClose }: NodeSheetProps) {
   }, []);
 
   return (
-    <>
-      {/* Scrim mobile só */}
+    <div className="lg:hidden">
       <div
-        className="fixed inset-0 bg-stone-900/40 z-30 lg:hidden"
+        className="fixed inset-0 bg-stone-900/40 z-30"
         onClick={onClose}
       />
-
-      {/* Sheet:
-            mobile: bottom sheet, fixed bottom, max-height 80vh
-            desktop: side panel direita, full height */}
       <aside
         className="
           fixed z-40 bg-white border-stone-900 shadow-xl
           inset-x-0 bottom-0 max-h-[85vh] border-t-2 rounded-t-lg
-          lg:inset-y-0 lg:right-0 lg:left-auto lg:max-h-none lg:w-[440px] lg:border-l-2 lg:border-t-0 lg:rounded-none
           flex flex-col
         "
         role="dialog"
         aria-modal="true"
       >
-        {/* Drag handle (mobile only) */}
-        <div className="lg:hidden flex justify-center pt-2 pb-1">
+        <div className="flex justify-center pt-2 pb-1 shrink-0">
           <div className="w-10 h-1 bg-stone-300 rounded-full" />
         </div>
-
-        {/* Header */}
-        <header className="flex items-center justify-between px-5 py-3 border-b-2 border-stone-900">
-          <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-stone-700">
-            {NODE_TYPE_LABEL[node.type]}
-          </p>
-          <button
-            type="button"
-            onClick={onClose}
-            className="text-stone-500 hover:text-stone-900 -mr-2 p-2"
-            aria-label="Fechar"
-          >
-            <X className="size-5" />
-          </button>
-        </header>
-
-        {/* Body — TipTap content */}
-        <div className="flex-1 overflow-y-auto px-5 py-4">
-          <h2 className="font-serif font-semibold text-2xl text-stone-950 leading-tight mb-4">
-            {node.label}
-          </h2>
-
-          <NodeContent content={node.content} />
-
-          {node.tags && node.tags.length > 0 && (
-            <div className="mt-6 pt-4 border-t border-stone-200">
-              <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-stone-500 mb-2">
-                Tags
-              </p>
-              <div className="flex flex-wrap gap-1.5">
-                {node.tags.map((tag) => (
-                  <span
-                    key={tag}
-                    className="px-2 py-0.5 bg-stone-100 border border-stone-300 text-xs text-stone-700 font-mono"
-                  >
-                    {tag}
-                  </span>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
+        <NodeSheetContent node={node} onClose={onClose} />
       </aside>
-    </>
+    </div>
   );
 }
