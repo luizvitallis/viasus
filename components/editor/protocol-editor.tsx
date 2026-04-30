@@ -14,7 +14,8 @@ import {
   type Edge,
   type Node,
 } from "@xyflow/react";
-import "@xyflow/react/dist/style.css";
+// xyflow CSS é importado em app/globals.css para garantir ordem correta na
+// cascade (precisa vir depois do preflight do Tailwind v4).
 import Link from "next/link";
 import {
   ArrowLeft,

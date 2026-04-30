@@ -9,7 +9,7 @@ import {
   type Edge,
   type Node,
 } from "@xyflow/react";
-import "@xyflow/react/dist/style.css";
+// xyflow CSS é importado em app/globals.css.
 import { X } from "lucide-react";
 import { viaNodeTypes } from "@/components/editor/nodes";
 import { getEdgeStyleProps } from "@/components/editor/edge-styles";

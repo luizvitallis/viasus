@@ -1,6 +1,7 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
+@import "@xyflow/react/dist/style.css";
 
 /* ============================================================
    ViaSus — tokens institucionais
@@ -104,4 +105,45 @@
     background: var(--foreground);
     color: var(--background);
   }
+}
+
+/* ============================================================
+   Defesa contra Tailwind/Shadcn preflight comerem o stylesheet
+   do xyflow (caixas renderizam mas arestas SVG ficam invisíveis).
+   ============================================================ */
+.react-flow .react-flow__edges {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: visible;
+}
+
+.react-flow .react-flow__edges svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.react-flow .react-flow__edge-path,
+.react-flow .react-flow__connection-path {
+  fill: none;
+  stroke: #1c1917;
+  stroke-width: 1.5;
+}
+
+.react-flow .react-flow__edge.selected .react-flow__edge-path,
+.react-flow .react-flow__edge:focus .react-flow__edge-path {
+  stroke: #166534;
+  stroke-width: 2;
+}
+
+.react-flow .react-flow__edge-textbg {
+  fill: #fafaf7;
+}
+
+.react-flow .react-flow__edge-text {
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 11px;
 }
