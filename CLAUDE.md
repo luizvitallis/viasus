@@ -563,16 +563,26 @@ pnpm lint
 
 ---
 
-**Última atualização:** MVP completo. Fases 0–7 em produção. Stack ativo: Next.js 16.2.4 / React 19.2.4 / Tailwind 4.2.4.
+**Última atualização:** V1 completo. Fases 0–10 em produção. Stack ativo: Next.js 16.2.4 / React 19.2.4 / Tailwind 4.2.4.
 
 **Status das fases:**
 - ✅ Fase 0 — Foundation
 - ✅ Fase 1 — Schema + RLS + Seed (migrations 0001/0002/0003 aplicadas)
-- ✅ Fase 2 — Auth + Onboarding (login admin, leitura pública, convite editor; migration 0004 aplicada)
+- ✅ Fase 2 — Auth + Onboarding (migration 0004 aplicada)
 - ✅ Fase 3 — Editor de fluxograma (xyflow + TipTap + auto-save)
 - ✅ Fase 4 — Visualizador público (mobile-first, bottom sheet, tracking)
 - ✅ Fase 5 — Versões + Auditoria + Métricas
 - ✅ Fase 6 — Anexos via Supabase Storage (migration 0005 aplicada)
 - ✅ Fase 7 — Busca full-text PT-BR (Cmd+K)
+- ✅ Fase 8 — 4 abas na home pública por tipo de documento
+- ✅ Fase 9 — Protocolos de Encaminhamento (checklist hierárquico + gerador de texto; migration 0006 aplicada)
+- ✅ Fase 10 — Fluxos Administrativos (nó tipo `documento`; migration 0007 aplicada)
 
-**Próximos passos sugeridos (V1):** rollout interno na SMS Caucaia, calculadoras clínicas embutidas, fork de protocolos entre tenants, diff visual entre versões, integração com Encaminhamento Regulado, modo offline (Service Worker).
+**Tipos de documento suportados:**
+- `linha_cuidado` → Linhas de Cuidado (fluxograma)
+- `pcdt` → PCDTs (fluxograma)
+- `encaminhamento` → Protocolos de Encaminhamento (checklist + gerador de texto pra prontuário)
+- `pop` → Fluxos Administrativos (fluxograma com nó tipo Documento)
+- `diretriz` → no enum, sem aba na home (surfaceável no futuro se necessário)
+
+**Próximos passos sugeridos (V1.x):** rollout interno na SMS Caucaia, piloto com 2-3 profissionais reais, calculadoras clínicas embutidas, fork de protocolos entre tenants, diff visual entre versões, integração com Encaminhamento Regulado, modo offline (Service Worker), domínio próprio (ex.: `viasus.caucaia.ce.gov.br`).
