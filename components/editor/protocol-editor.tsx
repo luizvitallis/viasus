@@ -22,6 +22,7 @@ import {
   CircleAlert,
   CircleCheck,
   ExternalLink,
+  History,
   Loader2,
   Send,
   X,
@@ -405,6 +406,14 @@ function ProtocolEditorInner({
           <span className="hidden md:inline-flex items-center px-2 py-0.5 border-2 border-stone-900 font-mono text-[10px] uppercase tracking-[0.14em] text-stone-700 bg-stone-100">
             {PROTOCOL_STATUS_LABEL[currentStatus as keyof typeof PROTOCOL_STATUS_LABEL] ?? currentStatus}
           </span>
+          <Link
+            href={`/admin/protocolos/${protocolId}/versoes`}
+            className="hidden md:inline-flex items-center gap-1 text-sm text-stone-600 hover:text-stone-900 transition-colors"
+            title="Histórico de versões"
+          >
+            <History className="size-3.5" />
+            Versões
+          </Link>
           {currentStatus === "published" && (
             <a
               href={`/${tenantSubdomain}/protocolos/${protocolMeta.slug}`}

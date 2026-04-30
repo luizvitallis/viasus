@@ -65,6 +65,22 @@ export function AdminHeader({
               >
                 Usuários
               </Link>
+              {(userRole === "gestor" || userRole === "admin") && (
+                <>
+                  <Link
+                    href="/admin/auditoria"
+                    className="hover:text-emerald-800 transition-colors"
+                  >
+                    Auditoria
+                  </Link>
+                  <Link
+                    href="/admin/metricas"
+                    className="hover:text-emerald-800 transition-colors"
+                  >
+                    Métricas
+                  </Link>
+                </>
+              )}
               {tenantSubdomain && (
                 <Link
                   href={`/${tenantSubdomain}`}
