@@ -152,7 +152,12 @@ function ProtocolViewerInner({
   return (
     <div className="flex-1 relative viewer-canvas">
       <style>{`
-        .viewer-canvas .react-flow__handle { display: none !important; }
+        /* Não usar display:none nos handles — xyflow precisa da posição
+           DOM deles pra calcular o path das arestas. Visibilidade zero. */
+        .viewer-canvas .react-flow__handle {
+          opacity: 0 !important;
+          pointer-events: none !important;
+        }
         .viewer-canvas .react-flow__node { cursor: pointer; }
       `}</style>
       <div className="h-[70vh] sm:h-[75vh] lg:h-[80vh] min-h-[480px]">
