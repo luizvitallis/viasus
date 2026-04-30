@@ -1,6 +1,9 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { HeartPulse } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
+import { WaveHeader } from "@/components/decorations/wave-header";
+import { HealthPattern } from "@/components/decorations/health-pattern";
 import { LoginForm } from "./login-form";
 
 export const metadata = {
@@ -18,10 +21,13 @@ export default async function LoginPage() {
 
   return (
     <div className="min-h-screen flex flex-col bg-stone-50">
+      <WaveHeader />
+
       {/* Barra institucional */}
       <header className="bg-stone-950 text-stone-50">
         <div className="mx-auto max-w-6xl px-6 py-2.5 flex items-center justify-between text-[11px] font-mono uppercase tracking-[0.18em]">
-          <Link href="/" className="hover:text-stone-300 transition-colors">
+          <Link href="/" className="hover:text-stone-300 transition-colors flex items-center gap-2">
+            <HeartPulse className="size-3.5 text-[var(--color-caucaia-red)]" />
             ViaSus · voltar à página inicial
           </Link>
           <span className="hidden sm:inline text-stone-400">acesso restrito</span>
@@ -30,9 +36,11 @@ export default async function LoginPage() {
 
       <main className="flex-1 grid lg:grid-cols-2">
         {/* Coluna informativa (some no mobile) */}
-        <aside className="hidden lg:flex flex-col justify-between border-r-2 border-stone-900 p-12 bg-stone-100">
-          <div>
+        <aside className="relative hidden lg:flex flex-col justify-between border-r-2 border-stone-900 p-12 bg-stone-100 overflow-hidden">
+          <HealthPattern opacity={0.05} />
+          <div className="relative">
             <p className="font-mono text-xs uppercase tracking-[0.18em] text-stone-500">
+              <span className="inline-block w-6 h-px bg-[var(--color-caucaia-red)] align-middle mr-2" />
               Painel de administração
             </p>
             <h1 className="mt-6 font-serif font-medium text-4xl text-stone-950 leading-tight">

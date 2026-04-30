@@ -18,6 +18,19 @@
   --color-paper: #fafaf7;
   --color-ink: #0c0a09;
 
+  /* Cores institucionais de Caucaia (do brasão municipal) — usadas como
+     toques institucionais, não predominantes. */
+  --color-caucaia-red: #c41e3a;
+  --color-caucaia-red-soft: #fce8eb;
+  --color-caucaia-red-deep: #8b0e22;
+  --color-caucaia-gray: #6b6b6b;
+  --color-caucaia-gray-soft: #c4c4c4;
+
+  /* Tons temáticos de saúde — pra usar moderadamente em accents
+     contextuais por tipo de documento e status */
+  --color-clinical-blue: #1e5b9e;
+  --color-clinical-blue-soft: #e6f0fa;
+
   --tracking-eyebrow: 0.18em;
 }
 

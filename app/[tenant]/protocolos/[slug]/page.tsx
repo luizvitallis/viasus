@@ -5,6 +5,7 @@ import {
   Download,
   File as FileIcon,
   FileText,
+  HeartPulse,
   Image as ImageIcon,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
@@ -134,6 +135,7 @@ export default async function ProtocolViewerPage({ params }: PageProps) {
     <div className="min-h-screen flex flex-col bg-stone-50">
       {/* Top bar institucional */}
       <header className="bg-stone-950 text-stone-50 sticky top-0 z-10">
+        <div className="h-0.5 bg-gradient-to-r from-[var(--color-caucaia-red)] via-stone-700 to-emerald-700" />
         <div className="mx-auto max-w-6xl px-4 sm:px-6 py-2 flex items-center justify-between gap-4 text-[11px] font-mono uppercase tracking-[0.18em]">
           <Link
             href={`/${tenant}`}
@@ -142,7 +144,8 @@ export default async function ProtocolViewerPage({ params }: PageProps) {
             <ArrowLeft className="size-3.5 shrink-0" />
             <span className="truncate">{tenantRow.name}</span>
           </Link>
-          <span className="text-stone-400 hidden sm:inline shrink-0">
+          <span className="text-stone-400 hidden sm:inline shrink-0 flex items-center gap-1.5">
+            <HeartPulse className="size-3 text-[var(--color-caucaia-red)]" />
             visualizador público
           </span>
         </div>
@@ -152,6 +155,7 @@ export default async function ProtocolViewerPage({ params }: PageProps) {
       <section className="border-b-2 border-stone-900 bg-stone-50">
         <div className="mx-auto max-w-6xl px-4 sm:px-6 py-6 sm:py-8">
           <p className="font-mono text-xs uppercase tracking-[0.18em] text-stone-500 mb-2">
+            <span className="inline-block w-5 h-px bg-[var(--color-caucaia-red)] align-middle mr-2" />
             {PROTOCOL_TYPE_LABEL[protocol.type as keyof typeof PROTOCOL_TYPE_LABEL] ?? protocol.type}
             {protocol.specialty ? ` · ${protocol.specialty}` : ""}
           </p>
@@ -262,9 +266,13 @@ export default async function ProtocolViewerPage({ params }: PageProps) {
 
       {/* Rodapé com info da versão */}
       <footer className="border-t-2 border-stone-900 bg-stone-100">
+        <div className="h-1 bg-gradient-to-r from-[var(--color-caucaia-red)] via-stone-500 to-stone-900" />
         <div className="mx-auto max-w-6xl px-4 sm:px-6 py-6 grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs font-mono uppercase tracking-[0.14em] text-stone-600">
           <div>
-            <p className="text-stone-900 font-medium">ViaSus</p>
+            <p className="text-stone-900 font-medium flex items-center gap-2">
+              <HeartPulse className="size-3.5 text-[var(--color-caucaia-red)]" />
+              ViaSus
+            </p>
             <p className="mt-1 normal-case tracking-normal text-stone-500 font-sans text-sm">
               {tenantRow.name}
             </p>
