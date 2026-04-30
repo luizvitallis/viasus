@@ -2,6 +2,7 @@ import Link from "next/link";
 import { LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { signOutAction } from "@/app/login/actions";
+import { SearchModal } from "./search-modal";
 
 interface AdminHeaderProps {
   userName: string;
@@ -95,6 +96,7 @@ export function AdminHeader({
           </div>
 
           <div className="flex items-center gap-4">
+            <SearchModal />
             <div className="hidden sm:block text-right">
               <p className="text-sm font-medium text-stone-900 leading-tight">
                 {userName}
