@@ -203,30 +203,44 @@ export default async function ProtocolViewerPage({ params }: PageProps) {
           </div>
         )
       ) : (
-        <ProtocolViewer
-          tenantId={tenantRow.id}
-          protocolId={protocol.id}
-          versionId={protocol.active_version_id ?? null}
-          nodes={(snapshot.nodes ?? []).map((n) => ({
-            id: n.id,
-            type: n.type as NodeType,
-            label: n.label,
-            position_x: n.position_x,
-            position_y: n.position_y,
-            content: n.content,
-            tags: Array.isArray(n.tags) ? n.tags : [],
-            documento_categoria: n.documento_categoria ?? null,
-            documento_acao: n.documento_acao ?? null,
-            documento_link: n.documento_link ?? null,
-          }))}
-          edges={(snapshot.edges ?? []).map((e) => ({
-            id: e.id,
-            source_node_id: e.source_node_id,
-            target_node_id: e.target_node_id,
-            label: e.label,
-            style: e.style as EdgeStyle,
-          }))}
-        />
+        (() => {
+          const rawNodes = snapshot.nodes ?? [];
+          // Normaliza coordenadas: o canto superior-esquerdo do grafo
+          // sempre vira (0, 0). Combinado com defaultViewport no client,
+          // garante que o início do fluxograma sempre aparece sem cropping.
+          const offsetX = rawNodes.length
+            ? Math.min(...rawNodes.map((n) => n.position_x))
+            : 0;
+          const offsetY = rawNodes.length
+            ? Math.min(...rawNodes.map((n) => n.position_y))
+            : 0;
+          return (
+            <ProtocolViewer
+              tenantId={tenantRow.id}
+              protocolId={protocol.id}
+              versionId={protocol.active_version_id ?? null}
+              nodes={rawNodes.map((n) => ({
+                id: n.id,
+                type: n.type as NodeType,
+                label: n.label,
+                position_x: n.position_x - offsetX,
+                position_y: n.position_y - offsetY,
+                content: n.content,
+                tags: Array.isArray(n.tags) ? n.tags : [],
+                documento_categoria: n.documento_categoria ?? null,
+                documento_acao: n.documento_acao ?? null,
+                documento_link: n.documento_link ?? null,
+              }))}
+              edges={(snapshot.edges ?? []).map((e) => ({
+                id: e.id,
+                source_node_id: e.source_node_id,
+                target_node_id: e.target_node_id,
+                label: e.label,
+                style: e.style as EdgeStyle,
+              }))}
+            />
+          );
+        })()
       )}
 
       {/* Anexos */}

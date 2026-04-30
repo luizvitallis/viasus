@@ -167,7 +167,7 @@ function ProtocolViewerInner({
         .viewer-canvas .react-flow__node { cursor: pointer; }
       `}</style>
       {/* Canvas dominante — quase fullscreen menos o header compacto.
-           Header agora ~50px + top bar ~30px + footer ~100px. */}
+           Header ~50px + top bar ~30px + footer ~80px. */}
       <div className="h-[calc(100vh-160px)] min-h-[520px]">
         <ReactFlow
           nodes={xyNodes}
@@ -175,12 +175,11 @@ function ProtocolViewerInner({
           nodeTypes={viaNodeTypes}
           onNodeClick={handleNodeClick}
           onPaneClick={() => setSelectedId(null)}
-          fitView
-          // padding 0.05 (5%) — bem mais apertado que o default 0.15;
-          // minZoom 0.7 garante que o fitView não zooma out demais ao
-          // tentar caber tudo. Profissional já vê os nós em tamanho legível
-          // sem precisar dar zoom manual no celular.
-          fitViewOptions={{ padding: 0.05, minZoom: 0.7, maxZoom: 1.3 }}
+          // Sem fitView (que centralizaria e cortaria o topo). Os nós já
+          // foram normalizados no server pra começar em (0, 0). O viewport
+          // inicial posiciona o canto superior-esquerdo do grafo no topo
+          // do canvas com pequena margem. Zoom 1.0 = nós em tamanho real.
+          defaultViewport={{ x: 30, y: 24, zoom: 1 }}
           minZoom={0.3}
           maxZoom={2.5}
           panOnScroll
