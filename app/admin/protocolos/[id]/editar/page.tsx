@@ -1,0 +1,95 @@
+import { notFound, redirect } from "next/navigation";
+import { Toaster } from "sonner";
+import { createClient } from "@/lib/supabase/server";
+import { ProtocolEditor } from "@/components/editor/protocol-editor";
+import type { EdgeStyle, NodeType } from "@/types/domain";
+
+interface PageProps {
+  params: Promise<{ id: string }>;
+}
+
+export const metadata = {
+  title: "Editor — ViaSus",
+};
+
+// Editor é client-heavy: desligamos o layout administrativo padrão (header)
+// usando uma rota com layout próprio. Aqui retornamos apenas o cliente
+// dentro do `<main>` do AdminLayout. O layout do admin já tem header de 64px,
+// mas o editor é uma "tela cheia" — então ele se ajusta dentro do main.
+export default async function EditarProtocoloPage({ params }: PageProps) {
+  const { id } = await params;
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) redirect("/login");
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("tenant_id, role")
+    .eq("id", user.id)
+    .single();
+  if (!profile) redirect("/login");
+
+  if (!["curador", "publicador", "gestor", "admin"].includes(profile.role)) {
+    return (
+      <div className="mx-auto max-w-4xl p-12">
+        <p className="text-destructive font-medium">
+          Seu papel ({profile.role}) não tem permissão para editar protocolos.
+        </p>
+      </div>
+    );
+  }
+
+  const { data: protocol } = await supabase
+    .from("protocols")
+    .select("id, title, slug, type, status, tenant_id")
+    .eq("id", id)
+    .single();
+  if (!protocol) notFound();
+  if (protocol.tenant_id !== profile.tenant_id) notFound();
+
+  const [{ data: nodes }, { data: edges }] = await Promise.all([
+    supabase
+      .from("nodes")
+      .select("id, type, label, position_x, position_y, content, tags")
+      .eq("protocol_id", id),
+    supabase
+      .from("edges")
+      .select("id, source_node_id, target_node_id, label, style, condition_expr")
+      .eq("protocol_id", id),
+  ]);
+
+  return (
+    <>
+      <Toaster position="bottom-center" richColors closeButton />
+      <ProtocolEditor
+        protocolId={protocol.id}
+        protocolMeta={{
+          title: protocol.title,
+          type: protocol.type,
+          status: protocol.status,
+          slug: protocol.slug,
+        }}
+        initialNodes={(nodes ?? []).map((n) => ({
+          id: n.id,
+          type: n.type as NodeType,
+          label: n.label,
+          position_x: n.position_x,
+          position_y: n.position_y,
+          content: n.content,
+          tags: Array.isArray(n.tags) ? (n.tags as string[]) : [],
+        }))}
+        initialEdges={(edges ?? []).map((e) => ({
+          id: e.id,
+          source_node_id: e.source_node_id,
+          target_node_id: e.target_node_id,
+          label: e.label,
+          style: e.style as EdgeStyle,
+          condition_expr: e.condition_expr,
+        }))}
+      />
+    </>
+  );
+}
