@@ -151,33 +151,33 @@ export default async function ProtocolViewerPage({ params }: PageProps) {
         </div>
       </header>
 
-      {/* Cabeçalho compacto do protocolo — foco é o fluxograma abaixo */}
+      {/* Cabeçalho mínimo do protocolo — uma linha em desktop, foco é o canvas */}
       <section className="border-b-2 border-stone-900 bg-stone-50">
-        <div className="mx-auto max-w-6xl px-4 sm:px-6 py-3 sm:py-4">
-          <p className="font-mono text-[10px] sm:text-xs uppercase tracking-[0.18em] text-stone-500 mb-1">
-            <span className="inline-block w-5 h-px bg-[var(--color-caucaia-red)] align-middle mr-2" />
-            {PROTOCOL_TYPE_LABEL[protocol.type as keyof typeof PROTOCOL_TYPE_LABEL] ?? protocol.type}
-            {protocol.specialty ? ` · ${protocol.specialty}` : ""}
-          </p>
-          <h1 className="font-serif font-semibold text-xl sm:text-2xl text-stone-950 leading-tight">
-            {protocol.title}
-          </h1>
-          {protocol.summary && (
-            <details className="mt-1 group">
-              <summary className="text-sm text-stone-600 cursor-pointer hover:text-stone-900 list-none flex items-center gap-1.5 marker:hidden">
-                <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-stone-500 group-open:hidden">
-                  ver resumo
-                </span>
-                <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-stone-500 hidden group-open:inline">
-                  ocultar resumo
-                </span>
-                <span className="text-stone-400 group-open:rotate-90 transition-transform">›</span>
-              </summary>
-              <p className="mt-2 text-sm text-stone-700 max-w-3xl leading-relaxed">
-                {protocol.summary}
-              </p>
-            </details>
-          )}
+        <div className="mx-auto max-w-6xl px-4 sm:px-6 py-2">
+          <div className="flex items-baseline gap-3 flex-wrap">
+            <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-stone-500 shrink-0">
+              <span className="inline-block w-4 h-px bg-[var(--color-caucaia-red)] align-middle mr-1.5" />
+              {PROTOCOL_TYPE_LABEL[protocol.type as keyof typeof PROTOCOL_TYPE_LABEL] ?? protocol.type}
+              {protocol.specialty ? ` · ${protocol.specialty}` : ""}
+            </p>
+            <h1 className="font-serif font-semibold text-base sm:text-lg text-stone-950 leading-tight flex-1 min-w-0">
+              {protocol.title}
+            </h1>
+            {protocol.summary && (
+              <details className="group shrink-0">
+                <summary className="cursor-pointer hover:text-stone-900 list-none marker:hidden font-mono text-[10px] uppercase tracking-[0.14em] text-stone-500">
+                  <span className="group-open:hidden">ver resumo</span>
+                  <span className="hidden group-open:inline">ocultar</span>
+                  <span className="ml-1 text-stone-400 group-open:rotate-90 inline-block transition-transform">
+                    ›
+                  </span>
+                </summary>
+                <p className="mt-2 text-sm text-stone-700 max-w-3xl leading-relaxed">
+                  {protocol.summary}
+                </p>
+              </details>
+            )}
+          </div>
         </div>
       </section>
 

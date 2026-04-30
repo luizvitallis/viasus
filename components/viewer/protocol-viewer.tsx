@@ -167,9 +167,8 @@ function ProtocolViewerInner({
         .viewer-canvas .react-flow__node { cursor: pointer; }
       `}</style>
       {/* Canvas dominante — quase fullscreen menos o header compacto.
-           Calc descontando: top bar (~30px) + faixa decorativa (~6px) +
-           cabeçalho do protocolo (~80-100px) + footer (~150px no desktop) */}
-      <div className="h-[calc(100vh-220px)] min-h-[520px] sm:h-[calc(100vh-200px)]">
+           Header agora ~50px + top bar ~30px + footer ~100px. */}
+      <div className="h-[calc(100vh-160px)] min-h-[520px]">
         <ReactFlow
           nodes={xyNodes}
           edges={xyEdges}
@@ -177,9 +176,13 @@ function ProtocolViewerInner({
           onNodeClick={handleNodeClick}
           onPaneClick={() => setSelectedId(null)}
           fitView
-          fitViewOptions={{ padding: 0.15 }}
-          minZoom={0.2}
-          maxZoom={2}
+          // padding 0.05 (5%) — bem mais apertado que o default 0.15;
+          // minZoom 0.7 garante que o fitView não zooma out demais ao
+          // tentar caber tudo. Profissional já vê os nós em tamanho legível
+          // sem precisar dar zoom manual no celular.
+          fitViewOptions={{ padding: 0.05, minZoom: 0.7, maxZoom: 1.3 }}
+          minZoom={0.3}
+          maxZoom={2.5}
           panOnScroll
           panOnDrag
           zoomOnPinch
