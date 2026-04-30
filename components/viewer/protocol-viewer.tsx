@@ -196,13 +196,12 @@ function ProtocolViewerInner({
             nodeTypes={viaNodeTypes}
             onNodeClick={handleNodeClick}
             onPaneClick={() => setSelectedId(null)}
-            // fitView sem minZoom: cabe SEMPRE o grafo todo na viewport.
-            // maxZoom 1.2: pra grafos pequenos não esticar demais; pra
-            // grafos grandes, xyflow zoom out o necessário. Resultado:
-            // tamanho do nó adaptativo ao tamanho do grafo, em vez de
-            // zoom fixo que ficava muito pequeno em fluxos densos.
-            fitView
-            fitViewOptions={{ padding: 0.05, maxZoom: 1.2 }}
+            // Zoom inicial alto (1.3) priorizando legibilidade dos nós.
+            // Aceita cropping na borda inferior (e direita) — o usuário
+            // arrasta pra navegar. Quando clicar num nó, useEffect refita
+            // tudo na nova largura do canvas (que já está bom).
+            // Coords já normalizadas no server pra começar em (0,0).
+            defaultViewport={{ x: 30, y: 24, zoom: 1.3 }}
             minZoom={0.3}
             maxZoom={2.5}
             panOnScroll
