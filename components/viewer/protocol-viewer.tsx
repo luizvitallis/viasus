@@ -167,11 +167,11 @@ function ProtocolViewerInner({
         .viewer-canvas .react-flow__node { cursor: pointer; }
       `}</style>
 
-      {/* Layout flex: canvas + (opcional) painel lateral inline em desktop.
-           Quando o painel abre, o canvas encolhe automaticamente.
-           Quando fecha, volta a ocupar 100%. */}
+      {/* Layout flex: canvas + (opcional) painel lateral inline em telas
+           médias+ (md ≥ 768px). Quando o painel abre, o canvas encolhe
+           com transição suave; ao fechar, volta a ocupar 100%. */}
       <div className="h-[calc(100vh-160px)] min-h-[520px] flex">
-        <div className="flex-1 min-w-0 relative">
+        <div className="flex-1 min-w-0 relative transition-[flex-basis] duration-200">
           <ReactFlow
             nodes={xyNodes}
             edges={xyEdges}
@@ -204,10 +204,10 @@ function ProtocolViewerInner({
           </ReactFlow>
         </div>
 
-        {/* Painel lateral (desktop) — INLINE, divide largura com canvas */}
+        {/* Painel lateral (md+) — INLINE, divide largura com canvas */}
         {selectedNode && (
           <aside
-            className="hidden lg:flex flex-col w-[440px] shrink-0 border-l-2 border-stone-900 bg-white"
+            className="hidden md:flex flex-col w-[400px] lg:w-[440px] shrink-0 border-l-2 border-stone-900 bg-white animate-in slide-in-from-right duration-200"
             role="region"
             aria-label="Conteúdo do nó"
           >
@@ -292,10 +292,10 @@ function NodeSheetContent({ node, onClose }: NodeSheetProps) {
  * desenhado separadamente no layout flex pai.
  */
 function MobileBottomSheet({ node, onClose }: NodeSheetProps) {
-  // Trava scroll do body enquanto sheet aberta (apenas no mobile)
+  // Trava scroll do body enquanto sheet aberta (apenas em telas pequenas)
   useEffect(() => {
-    const isMobile = window.matchMedia("(max-width: 1023px)").matches;
-    if (!isMobile) return;
+    const mq = window.matchMedia("(max-width: 767px)");
+    if (!mq.matches) return;
     document.body.style.overflow = "hidden";
     return () => {
       document.body.style.overflow = "";
@@ -303,7 +303,7 @@ function MobileBottomSheet({ node, onClose }: NodeSheetProps) {
   }, []);
 
   return (
-    <div className="lg:hidden">
+    <div className="md:hidden">
       <div
         className="fixed inset-0 bg-stone-900/40 z-30"
         onClick={onClose}
