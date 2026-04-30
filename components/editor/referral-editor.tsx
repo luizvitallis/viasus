@@ -3,11 +3,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import {
+  AlertTriangle,
   ArrowLeft,
-  Check,
   CircleAlert,
   CircleCheck,
-  Copy,
   ExternalLink,
   History,
   Loader2,
@@ -474,49 +473,67 @@ function NodeEditor({
   onDelete,
   onAddChild,
 }: NodeEditorProps) {
+  const missingText = !node.text_when_checked?.trim();
+
   return (
     <li
-      className="border-2 border-stone-300 bg-white"
+      className={`border-2 bg-white ${missingText ? "border-amber-500" : "border-stone-300"}`}
       style={{ marginLeft: depth > 0 ? `${depth * 16}px` : 0 }}
     >
-      <div className="p-3 space-y-2.5">
-        <div className="grid grid-cols-1 sm:grid-cols-12 gap-2">
-          <input
-            type="text"
-            value={node.label}
-            onChange={(e) => onUpdate(path, { label: e.target.value })}
-            placeholder="Rótulo do checkbox"
-            className="sm:col-span-9 border-2 border-stone-300 px-3 py-1.5 text-sm focus-visible:border-emerald-800 focus-visible:outline-none"
-          />
-          <select
-            value={node.category ?? "none"}
-            onChange={(e) =>
-              onUpdate(path, {
-                category:
-                  e.target.value === "none"
-                    ? null
-                    : (e.target.value as ReferralCategory),
-              })
-            }
-            className="sm:col-span-3 border-2 border-stone-300 px-2 py-1.5 text-sm focus-visible:border-emerald-800 focus-visible:outline-none"
-          >
-            {CATEGORY_OPTIONS.map((c) => (
-              <option key={c.value} value={c.value}>
-                {c.label}
-              </option>
-            ))}
-          </select>
+      <div className="p-3 space-y-3">
+        <div>
+          <label className="block font-mono text-[10px] uppercase tracking-[0.18em] text-stone-600 mb-1">
+            Rótulo (aparece no checkbox)
+          </label>
+          <div className="grid grid-cols-1 sm:grid-cols-12 gap-2">
+            <input
+              type="text"
+              value={node.label}
+              onChange={(e) => onUpdate(path, { label: e.target.value })}
+              placeholder="Ex.: PA ≥ 140/90 com 3 anti-hipertensivos"
+              className="sm:col-span-9 border-2 border-stone-300 px-3 py-1.5 text-sm focus-visible:border-emerald-800 focus-visible:outline-none"
+            />
+            <select
+              value={node.category ?? "none"}
+              onChange={(e) =>
+                onUpdate(path, {
+                  category:
+                    e.target.value === "none"
+                      ? null
+                      : (e.target.value as ReferralCategory),
+                })
+              }
+              className="sm:col-span-3 border-2 border-stone-300 px-2 py-1.5 text-sm focus-visible:border-emerald-800 focus-visible:outline-none"
+            >
+              {CATEGORY_OPTIONS.map((c) => (
+                <option key={c.value} value={c.value}>
+                  {c.label}
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
 
-        <textarea
-          value={node.text_when_checked ?? ""}
-          onChange={(e) =>
-            onUpdate(path, { text_when_checked: e.target.value })
-          }
-          rows={1}
-          placeholder="Texto inserido na justificativa quando este item for marcado"
-          className="w-full border-2 border-stone-300 px-3 py-1.5 text-sm focus-visible:border-emerald-800 focus-visible:outline-none resize-y"
-        />
+        <div>
+          <label className="block font-mono text-[10px] uppercase tracking-[0.18em] text-stone-600 mb-1">
+            Texto na justificativa
+            {missingText && (
+              <span className="ml-2 inline-flex items-center gap-1 normal-case tracking-normal text-amber-700">
+                <AlertTriangle className="size-3" />
+                vazio — este item não vai aparecer na justificativa
+              </span>
+            )}
+          </label>
+          <textarea
+            value={node.text_when_checked ?? ""}
+            onChange={(e) =>
+              onUpdate(path, { text_when_checked: e.target.value })
+            }
+            rows={1}
+            placeholder="Frase que será inserida na justificativa quando este item for marcado"
+            className={`w-full border-2 px-3 py-1.5 text-sm focus-visible:border-emerald-800 focus-visible:outline-none resize-y ${missingText ? "border-amber-400 bg-amber-50" : "border-stone-300"}`}
+          />
+        </div>
 
         <div className="flex items-center gap-2 text-xs">
           <button
