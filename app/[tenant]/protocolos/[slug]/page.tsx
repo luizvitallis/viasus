@@ -35,6 +35,9 @@ interface SnapshotNode {
   content: unknown;
   tags: string[] | null;
   calculator_type?: string | null;
+  documento_categoria?: string | null;
+  documento_acao?: string | null;
+  documento_link?: string | null;
 }
 
 interface SnapshotEdge {
@@ -197,6 +200,9 @@ export default async function ProtocolViewerPage({ params }: PageProps) {
             position_y: n.position_y,
             content: n.content,
             tags: Array.isArray(n.tags) ? n.tags : [],
+            documento_categoria: n.documento_categoria ?? null,
+            documento_acao: n.documento_acao ?? null,
+            documento_link: n.documento_link ?? null,
           }))}
           edges={(snapshot.edges ?? []).map((e) => ({
             id: e.id,

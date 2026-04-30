@@ -8,6 +8,7 @@ import {
   Send,
   Sigma,
   Sparkles,
+  FileText,
 } from "lucide-react";
 import type { NodeType } from "@/types/domain";
 import { NODE_TYPE_LABEL } from "@/types/domain";
@@ -17,13 +18,19 @@ interface EditorToolbarProps {
   onAutoLayout: () => void;
 }
 
-const NODE_BUTTONS: { type: NodeType; icon: React.ComponentType<{ className?: string }> }[] = [
+// `documento` ainda não está no enum gerado de NodeType (migration 0007 só
+// aplicada em runtime). Castamos pra string até regenerarmos os tipos.
+const NODE_BUTTONS: {
+  type: NodeType;
+  icon: React.ComponentType<{ className?: string }>;
+}[] = [
   { type: "ponto_atencao", icon: CircleDot },
   { type: "decisao", icon: GitBranch },
   { type: "conduta_intermediaria", icon: Workflow },
   { type: "conduta_terminal", icon: Goal },
   { type: "encaminhamento", icon: Send },
   { type: "calculadora", icon: Sigma },
+  { type: "documento" as NodeType, icon: FileText },
 ];
 
 export function EditorToolbar({ onAddNode, onAutoLayout }: EditorToolbarProps) {

@@ -67,6 +67,8 @@ export const REFERRAL_CATEGORY_LABEL: Record<ReferralCategory, string> = {
   achado: "Achado",
 };
 
+// `documento` ainda não está no enum gerado de NodeType até a migration 0007
+// ser aplicada e os tipos regenerados. Cast preserva o array como NodeType[].
 export const NODE_TYPES: NodeType[] = [
   "ponto_atencao",
   "decisao",
@@ -74,17 +76,47 @@ export const NODE_TYPES: NodeType[] = [
   "conduta_terminal",
   "encaminhamento",
   "calculadora",
+  "documento" as NodeType,
 ];
+
+export type DocumentoCategoria =
+  | "exame"
+  | "impresso"
+  | "formulario"
+  | "preparo"
+  | "outro";
+
+export type DocumentoAcao =
+  | "apenas_anexar"
+  | "anexar_e_levar"
+  | "apenas_levar";
+
+export const DOCUMENTO_CATEGORIA_LABEL: Record<DocumentoCategoria, string> = {
+  exame: "Exame",
+  impresso: "Impresso",
+  formulario: "Formulário",
+  preparo: "Preparo",
+  outro: "Outro",
+};
+
+export const DOCUMENTO_ACAO_LABEL: Record<DocumentoAcao, string> = {
+  apenas_anexar: "Apenas anexar",
+  anexar_e_levar: "Anexar + levar no dia",
+  apenas_levar: "Levar no dia",
+};
 
 export const EDGE_STYLES: EdgeStyle[] = ["normal", "urgente", "condicional"];
 
-export const NODE_TYPE_LABEL: Record<NodeType, string> = {
+// Record<string, ...> em vez de Record<NodeType, ...> pra acomodar 'documento'
+// até a migration 0007 ser aplicada e os tipos regenerados.
+export const NODE_TYPE_LABEL: Record<string, string> = {
   ponto_atencao: "Ponto de atenção",
   decisao: "Decisão",
   conduta_intermediaria: "Conduta intermediária",
   conduta_terminal: "Conduta terminal",
   encaminhamento: "Encaminhamento",
   calculadora: "Calculadora",
+  documento: "Documento",
 };
 
 export const PROTOCOL_TYPE_LABEL: Record<ProtocolType, string> = {

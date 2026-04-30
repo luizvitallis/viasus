@@ -1,8 +1,22 @@
 "use client";
 
 import { Handle, Position, type NodeProps } from "@xyflow/react";
-import { Sigma, ArrowRight } from "lucide-react";
-import type { NodeType } from "@/types/domain";
+import {
+  Sigma,
+  ArrowRight,
+  FileText,
+  Download,
+  AlertTriangle,
+} from "lucide-react";
+import type {
+  DocumentoAcao,
+  DocumentoCategoria,
+  NodeType,
+} from "@/types/domain";
+import {
+  DOCUMENTO_ACAO_LABEL,
+  DOCUMENTO_CATEGORIA_LABEL,
+} from "@/types/domain";
 
 export interface ViaNodeData {
   label: string;
@@ -166,11 +180,91 @@ function CalculadoraNode({ data, selected }: ViaNodeProps) {
   );
 }
 
-export const viaNodeTypes: Record<NodeType, React.ComponentType<ViaNodeProps>> = {
+// ---------- 7. documento (Fluxos Administrativos) ----------
+const ACAO_STYLES: Record<
+  DocumentoAcao,
+  { container: string; pill: string; icon: typeof AlertTriangle | null }
+> = {
+  apenas_anexar: {
+    container: "bg-emerald-50 text-emerald-900",
+    pill: "bg-emerald-800 text-emerald-50",
+    icon: null,
+  },
+  anexar_e_levar: {
+    container: "bg-red-50 text-red-900",
+    pill: "bg-red-700 text-red-50",
+    icon: AlertTriangle,
+  },
+  apenas_levar: {
+    container: "bg-amber-50 text-amber-900",
+    pill: "bg-amber-700 text-amber-50",
+    icon: null,
+  },
+};
+
+function DocumentoNode({ data, selected }: ViaNodeProps) {
+  const categoria = (data.documento_categoria as DocumentoCategoria | null) ?? null;
+  const acao = (data.documento_acao as DocumentoAcao | null) ?? "anexar_e_levar";
+  const link = (data.documento_link as string | null) ?? null;
+  const style = ACAO_STYLES[acao] ?? ACAO_STYLES.anexar_e_levar;
+  const AcaoIcon = style.icon;
+
+  return (
+    <div
+      className={`${widthCls} bg-white border-2 border-stone-700 ${selected ? "ring-2 ring-emerald-700 ring-offset-2 ring-offset-stone-50" : ""}`}
+    >
+      <Handle type="target" position={Position.Top} className={handleStyle} />
+
+      <div className="flex items-center gap-2 px-3 py-1.5 bg-stone-100 border-b-2 border-stone-700">
+        <FileText className="size-3 text-stone-700" />
+        <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-stone-700">
+          Documento
+          {categoria ? ` · ${DOCUMENTO_CATEGORIA_LABEL[categoria]}` : ""}
+        </p>
+      </div>
+
+      <div className="px-4 py-2.5">
+        <p className="font-medium text-stone-950 leading-tight text-sm">
+          {data.label || "Sem rótulo"}
+        </p>
+      </div>
+
+      <div
+        className={`flex items-center gap-1.5 px-3 py-1 text-[11px] font-medium ${style.container} border-t border-stone-200`}
+      >
+        {AcaoIcon && <AcaoIcon className="size-3 shrink-0" />}
+        <span className={`px-1.5 py-0.5 font-mono text-[10px] uppercase tracking-[0.14em] ${style.pill}`}>
+          {DOCUMENTO_ACAO_LABEL[acao]}
+        </span>
+      </div>
+
+      {link && (
+        <a
+          href={link}
+          target="_blank"
+          rel="noopener"
+          onClick={(e) => e.stopPropagation()}
+          className="flex items-center gap-1.5 px-3 py-1.5 bg-stone-50 hover:bg-stone-100 text-[11px] text-stone-700 hover:text-emerald-800 border-t border-stone-200 transition-colors"
+        >
+          <Download className="size-3 shrink-0" />
+          Baixar modelo
+        </a>
+      )}
+
+      <Handle type="source" position={Position.Bottom} className={handleStyle} />
+    </div>
+  );
+}
+
+// NOTE: Record<string, ...> em vez de Record<NodeType, ...> porque o enum
+// node_type só passa a incluir 'documento' depois que a migration 0007 for
+// aplicada e os tipos forem regenerados. xyflow aceita Record<string, ...>.
+export const viaNodeTypes: Record<string, React.ComponentType<ViaNodeProps>> = {
   ponto_atencao: PontoAtencaoNode,
   decisao: DecisaoNode,
   conduta_intermediaria: CondutaIntermediariaNode,
   conduta_terminal: CondutaTerminalNode,
   encaminhamento: EncaminhamentoNode,
   calculadora: CalculadoraNode,
+  documento: DocumentoNode,
 };

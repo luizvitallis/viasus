@@ -76,7 +76,9 @@ export default async function EditarProtocoloPage({ params }: PageProps) {
   const [{ data: nodes }, { data: edges }] = await Promise.all([
     supabase
       .from("nodes")
-      .select("id, type, label, position_x, position_y, content, tags")
+      .select(
+        "id, type, label, position_x, position_y, content, tags, documento_categoria, documento_acao, documento_link",
+      )
       .eq("protocol_id", id),
     supabase
       .from("edges")
@@ -105,6 +107,13 @@ export default async function EditarProtocoloPage({ params }: PageProps) {
           position_y: n.position_y,
           content: n.content,
           tags: Array.isArray(n.tags) ? (n.tags as string[]) : [],
+          documento_categoria:
+            (n as { documento_categoria?: string | null })
+              .documento_categoria ?? null,
+          documento_acao:
+            (n as { documento_acao?: string | null }).documento_acao ?? null,
+          documento_link:
+            (n as { documento_link?: string | null }).documento_link ?? null,
         }))}
         initialEdges={(edges ?? []).map((e) => ({
           id: e.id,

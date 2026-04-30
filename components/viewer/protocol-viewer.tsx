@@ -29,6 +29,9 @@ interface ViewerNode {
   position_y: number;
   content: unknown;
   tags: string[];
+  documento_categoria?: string | null;
+  documento_acao?: string | null;
+  documento_link?: string | null;
 }
 
 interface ViewerEdge {
@@ -56,6 +59,9 @@ function nodeFromViewer(n: ViewerNode): Node {
       label: n.label,
       content: n.content,
       tags: n.tags,
+      documento_categoria: n.documento_categoria ?? null,
+      documento_acao: n.documento_acao ?? null,
+      documento_link: n.documento_link ?? null,
     },
     draggable: false,
     connectable: false,

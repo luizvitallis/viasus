@@ -9,12 +9,17 @@ import {
   NODE_TYPE_LABEL,
   type NodeType,
   EDGE_STYLES,
+  DOCUMENTO_CATEGORIA_LABEL,
+  DOCUMENTO_ACAO_LABEL,
 } from "@/types/domain";
 
 interface NodeData {
   label: string;
   content: unknown;
   tags: string[];
+  documento_categoria?: string | null;
+  documento_acao?: string | null;
+  documento_link?: string | null;
 }
 
 interface SelectedNode {
@@ -173,6 +178,79 @@ export function PropertiesPanel({
             ))}
           </select>
         </div>
+
+        {/* Campos específicos do tipo Documento (Fluxos Administrativos).
+             Cast pra string porque NodeType só inclui 'documento' depois da
+             0007 aplicada + types regenerados. */}
+        {(node.type as string) === "documento" && (
+          <div className="space-y-4 border-2 border-stone-300 bg-stone-50 p-3">
+            <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-stone-700">
+              Configuração do documento
+            </p>
+
+            <div className="space-y-2">
+              <Label htmlFor="doc-categoria">Categoria</Label>
+              <select
+                id="doc-categoria"
+                value={node.data.documento_categoria ?? "impresso"}
+                onChange={(e) =>
+                  onUpdateNode(node.id, {
+                    documento_categoria: e.target.value,
+                  })
+                }
+                className="flex h-10 w-full border-2 border-stone-300 bg-white px-3 py-1 text-sm focus-visible:border-emerald-800 focus-visible:outline-none"
+              >
+                {Object.entries(DOCUMENTO_CATEGORIA_LABEL).map(
+                  ([value, label]) => (
+                    <option key={value} value={value}>
+                      {label}
+                    </option>
+                  ),
+                )}
+              </select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="doc-acao">Ação requerida</Label>
+              <select
+                id="doc-acao"
+                value={node.data.documento_acao ?? "anexar_e_levar"}
+                onChange={(e) =>
+                  onUpdateNode(node.id, { documento_acao: e.target.value })
+                }
+                className="flex h-10 w-full border-2 border-stone-300 bg-white px-3 py-1 text-sm focus-visible:border-emerald-800 focus-visible:outline-none"
+              >
+                {Object.entries(DOCUMENTO_ACAO_LABEL).map(([value, label]) => (
+                  <option key={value} value={value}>
+                    {label}
+                  </option>
+                ))}
+              </select>
+              <p className="text-xs text-stone-500">
+                Define a cor do nó e a instrução exibida ao profissional.
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="doc-link">Link do modelo (opcional)</Label>
+              <Input
+                id="doc-link"
+                type="url"
+                value={node.data.documento_link ?? ""}
+                onChange={(e) =>
+                  onUpdateNode(node.id, {
+                    documento_link: e.target.value || null,
+                  })
+                }
+                placeholder="https://…/modelo.pdf"
+              />
+              <p className="text-xs text-stone-500">
+                Se preenchido, aparece um botão &ldquo;Baixar modelo&rdquo; no
+                nó.
+              </p>
+            </div>
+          </div>
+        )}
 
         <div className="space-y-2">
           <Label>Conteúdo clínico</Label>

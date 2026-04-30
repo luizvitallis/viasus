@@ -11,6 +11,7 @@ const NODE_TYPES = [
   "conduta_terminal",
   "encaminhamento",
   "calculadora",
+  "documento",
 ] as const;
 
 const EDGE_STYLES = ["normal", "urgente", "condicional"] as const;
@@ -35,6 +36,9 @@ const NodeSchema = z.object({
   content: z.unknown().nullable().optional(),
   tags: z.array(z.string()).default([]),
   calculator_type: z.string().nullable().optional(),
+  documento_categoria: z.string().nullable().optional(),
+  documento_acao: z.string().nullable().optional(),
+  documento_link: z.string().nullable().optional(),
 });
 
 const EdgeSchema = z.object({
@@ -143,6 +147,9 @@ export async function saveProtocolGraph(payload: unknown): Promise<SaveResult> {
       content: (n.content ?? {}) as never,
       tags: (n.tags ?? []) as never,
       calculator_type: n.calculator_type ?? null,
+      documento_categoria: n.documento_categoria ?? null,
+      documento_acao: n.documento_acao ?? null,
+      documento_link: n.documento_link ?? null,
     }));
     const { error } = await supabase.from("nodes").upsert(nodeRows);
     if (error) return { ok: false, error: `Erro salvando nós: ${error.message}` };
@@ -323,7 +330,7 @@ export async function publishProtocol(payload: unknown): Promise<PublishResult> 
   const [{ data: nodes }, { data: edges }] = await Promise.all([
     supabase
       .from("nodes")
-      .select("id, type, label, position_x, position_y, content, tags, calculator_type, links_to_protocol_id, encaminhamento_target_id")
+      .select("id, type, label, position_x, position_y, content, tags, calculator_type, links_to_protocol_id, encaminhamento_target_id, documento_categoria, documento_acao, documento_link")
       .eq("protocol_id", protocol.id),
     supabase
       .from("edges")

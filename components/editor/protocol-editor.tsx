@@ -54,6 +54,9 @@ interface InitialNode {
   position_y: number;
   content: unknown;
   tags: string[];
+  documento_categoria?: string | null;
+  documento_acao?: string | null;
+  documento_link?: string | null;
 }
 
 interface InitialEdge {
@@ -90,6 +93,9 @@ function nodeFromInitial(n: InitialNode): Node {
       label: n.label,
       content: n.content ?? { type: "doc", content: [] },
       tags: n.tags,
+      documento_categoria: n.documento_categoria ?? null,
+      documento_acao: n.documento_acao ?? null,
+      documento_link: n.documento_link ?? null,
     },
   };
 }
@@ -217,6 +223,14 @@ function ProtocolEditorInner({
           label: "Novo nó",
           content: { type: "doc", content: [] },
           tags: [],
+          // Defaults pra nó tipo documento (Fluxos Administrativos).
+          // Cast pra string porque NodeType só inclui 'documento' depois
+          // da migration 0007 aplicada + types regenerados.
+          documento_categoria:
+            (type as string) === "documento" ? "impresso" : null,
+          documento_acao:
+            (type as string) === "documento" ? "anexar_e_levar" : null,
+          documento_link: null,
         },
       };
       setNodes((ns) => [...ns, newNode]);
@@ -315,6 +329,9 @@ function ProtocolEditorInner({
           position_y: n.position.y,
           content: n.data?.content ?? null,
           tags: ((n.data?.tags as string[]) ?? []) as string[],
+          documento_categoria: (n.data?.documento_categoria as string | null) ?? null,
+          documento_acao: (n.data?.documento_acao as string | null) ?? null,
+          documento_link: (n.data?.documento_link as string | null) ?? null,
         })),
         edges: edges.map((e) => ({
           id: e.id,
@@ -365,6 +382,9 @@ function ProtocolEditorInner({
         label: (n.data?.label as string) ?? "",
         content: n.data?.content ?? { type: "doc", content: [] },
         tags: ((n.data?.tags as string[]) ?? []),
+        documento_categoria: (n.data?.documento_categoria as string | null) ?? null,
+        documento_acao: (n.data?.documento_acao as string | null) ?? null,
+        documento_link: (n.data?.documento_link as string | null) ?? null,
       },
     };
   }, [selectedNodeId, nodes]);
