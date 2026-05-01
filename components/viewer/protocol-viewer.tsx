@@ -114,26 +114,31 @@ function ProtocolViewerInner({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Re-fit do canvas APENAS quando o painel TOGGLE (abre OU fecha).
-  // Usamos um ref que armazena o último estado conhecido. O efeito só
-  // dispara fitView se o estado MUDOU desde a última observação — protege
-  // contra strict-mode double-render, mudança de referência de `flow`,
-  // ou qualquer re-render acidental que não envolveu toggle de painel.
+  // Ajuste de viewport APENAS em toggle real do painel (abre OU fecha).
+  // Ref-guard evita disparo em strict-mode double-render ou re-renders
+  // acidentais. Comportamento assimétrico:
+  //   - ABRE: fitView pra adaptar à nova largura menor do canvas
+  //   - FECHA: volta pro defaultViewport inicial (zoom 0.9 + cantosup-esq)
   const prevPanelOpen = useRef<boolean | null>(null);
   const isPanelOpen = Boolean(selectedId);
   useEffect(() => {
-    // Primeira observação: só registra, sem fitView. Garante que o
-    // defaultViewport (0.9) é respeitado na carga inicial.
     if (prevPanelOpen.current === null) {
       prevPanelOpen.current = isPanelOpen;
       return;
     }
-    // Sem mudança real → não faz nada
     if (prevPanelOpen.current === isPanelOpen) return;
+    const wasOpen = prevPanelOpen.current;
     prevPanelOpen.current = isPanelOpen;
 
     const t = setTimeout(() => {
-      flow.fitView({ padding: 0.08, duration: 280, maxZoom: 1.2 });
+      if (isPanelOpen && !wasOpen) {
+        flow.fitView({ padding: 0.08, duration: 280, maxZoom: 1.2 });
+      } else if (!isPanelOpen && wasOpen) {
+        flow.setViewport(
+          { x: 30, y: 24, zoom: 0.9 },
+          { duration: 280 },
+        );
+      }
     }, 280);
     return () => clearTimeout(t);
   }, [isPanelOpen, flow]);
