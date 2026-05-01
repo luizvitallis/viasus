@@ -39,6 +39,8 @@ const NodeSchema = z.object({
   documento_categoria: z.string().nullable().optional(),
   documento_acao: z.string().nullable().optional(),
   documento_link: z.string().nullable().optional(),
+  color_bg: z.string().nullable().optional(),
+  color_border: z.string().nullable().optional(),
 });
 
 const EdgeSchema = z.object({
@@ -48,6 +50,7 @@ const EdgeSchema = z.object({
   label: z.string().nullable().optional(),
   style: z.enum(EDGE_STYLES),
   condition_expr: z.unknown().nullable().optional(),
+  color_stroke: z.string().nullable().optional(),
 });
 
 const PayloadSchema = z.object({
@@ -150,6 +153,8 @@ export async function saveProtocolGraph(payload: unknown): Promise<SaveResult> {
       documento_categoria: n.documento_categoria ?? null,
       documento_acao: n.documento_acao ?? null,
       documento_link: n.documento_link ?? null,
+      color_bg: n.color_bg ?? null,
+      color_border: n.color_border ?? null,
     }));
     const { error } = await supabase.from("nodes").upsert(nodeRows);
     if (error) return { ok: false, error: `Erro salvando nós: ${error.message}` };
@@ -165,6 +170,7 @@ export async function saveProtocolGraph(payload: unknown): Promise<SaveResult> {
       label: e.label ?? null,
       style: e.style as EdgeStyle,
       condition_expr: (e.condition_expr ?? null) as never,
+      color_stroke: e.color_stroke ?? null,
     }));
     const { error } = await supabase.from("edges").upsert(edgeRows);
     if (error) return { ok: false, error: `Erro salvando arestas: ${error.message}` };
@@ -330,11 +336,11 @@ export async function publishProtocol(payload: unknown): Promise<PublishResult> 
   const [{ data: nodes }, { data: edges }] = await Promise.all([
     supabase
       .from("nodes")
-      .select("id, type, label, position_x, position_y, content, tags, calculator_type, links_to_protocol_id, encaminhamento_target_id, documento_categoria, documento_acao, documento_link")
+      .select("id, type, label, position_x, position_y, content, tags, calculator_type, links_to_protocol_id, encaminhamento_target_id, documento_categoria, documento_acao, documento_link, color_bg, color_border")
       .eq("protocol_id", protocol.id),
     supabase
       .from("edges")
-      .select("id, source_node_id, target_node_id, label, style, condition_expr")
+      .select("id, source_node_id, target_node_id, label, style, condition_expr, color_stroke")
       .eq("protocol_id", protocol.id),
   ]);
 

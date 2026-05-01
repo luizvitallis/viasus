@@ -20,6 +20,8 @@ interface NodeData {
   documento_categoria?: string | null;
   documento_acao?: string | null;
   documento_link?: string | null;
+  color_bg?: string | null;
+  color_border?: string | null;
 }
 
 interface SelectedNode {
@@ -32,6 +34,7 @@ interface SelectedEdge {
   id: string;
   label?: string | null;
   style: string;
+  color_stroke?: string | null;
 }
 
 interface PropertiesPanelProps {
@@ -42,10 +45,79 @@ interface PropertiesPanelProps {
   onDeleteNode: (id: string) => void;
   onUpdateEdge: (
     id: string,
-    patch: { label?: string; style?: string },
+    patch: { label?: string; style?: string; color_stroke?: string | null },
   ) => void;
   onDeleteEdge: (id: string) => void;
   onClose: () => void;
+}
+
+const COLOR_PRESETS = [
+  "#1c1917", // ink
+  "#c41e3a", // caucaia red
+  "#1e5b9e", // clinical blue
+  "#166534", // emerald-800
+  "#b91c1c", // red-700
+  "#b75000", // amber-700
+  "#44403b", // stone-700
+  "#79716b", // stone-500
+];
+
+function ColorField({
+  label,
+  value,
+  onChange,
+  fallback,
+}: {
+  label: string;
+  value: string | null | undefined;
+  onChange: (v: string | null) => void;
+  fallback: string;
+}) {
+  const current = value ?? fallback;
+  return (
+    <div className="space-y-1.5">
+      <Label className="text-xs">{label}</Label>
+      <div className="flex items-center gap-2">
+        <input
+          type="color"
+          value={current}
+          onChange={(e) => onChange(e.target.value)}
+          className="size-9 border-2 border-stone-300 cursor-pointer p-0 bg-transparent"
+          aria-label={label}
+        />
+        <input
+          type="text"
+          value={value ?? ""}
+          onChange={(e) => onChange(e.target.value || null)}
+          placeholder={`default: ${fallback}`}
+          className="flex-1 h-9 border-2 border-stone-300 px-2 text-xs font-mono focus-visible:border-emerald-800 focus-visible:outline-none"
+        />
+        {value && (
+          <button
+            type="button"
+            onClick={() => onChange(null)}
+            className="text-[10px] uppercase font-mono tracking-[0.14em] text-stone-500 hover:text-stone-900 px-1.5"
+            title="Voltar ao default do tipo"
+          >
+            reset
+          </button>
+        )}
+      </div>
+      <div className="flex flex-wrap gap-1">
+        {COLOR_PRESETS.map((c) => (
+          <button
+            key={c}
+            type="button"
+            onClick={() => onChange(c)}
+            className="size-5 border border-stone-300 hover:scale-110 transition-transform"
+            style={{ backgroundColor: c }}
+            aria-label={`cor ${c}`}
+            title={c}
+          />
+        ))}
+      </div>
+    </div>
+  );
 }
 
 export function PropertiesPanel({
@@ -110,6 +182,26 @@ export function PropertiesPanel({
               <option value="condicional">Condicional (tracejada)</option>
             </select>
             {EDGE_STYLES /* keep import alive */ && null}
+          </div>
+
+          <div className="border-2 border-stone-300 bg-stone-50 p-3 space-y-3">
+            <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-stone-700">
+              Cor da linha + seta
+            </p>
+            <ColorField
+              label="Sobrescreve a cor do estilo"
+              value={selectedEdge.color_stroke ?? null}
+              onChange={(v) =>
+                onUpdateEdge(selectedEdge.id, { color_stroke: v })
+              }
+              fallback={
+                selectedEdge.style === "urgente"
+                  ? "#b91c1c"
+                  : selectedEdge.style === "condicional"
+                    ? "#57534e"
+                    : "#1c1917"
+              }
+            />
           </div>
         </div>
 
@@ -177,6 +269,27 @@ export function PropertiesPanel({
               </option>
             ))}
           </select>
+        </div>
+
+        <div className="border-2 border-stone-300 bg-stone-50 p-3 space-y-3">
+          <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-stone-700">
+            Cores customizadas
+          </p>
+          <ColorField
+            label="Fundo da caixa"
+            value={node.data.color_bg ?? null}
+            onChange={(v) => onUpdateNode(node.id, { color_bg: v })}
+            fallback="#ffffff"
+          />
+          <ColorField
+            label="Borda"
+            value={node.data.color_border ?? null}
+            onChange={(v) => onUpdateNode(node.id, { color_border: v })}
+            fallback="#1c1917"
+          />
+          <p className="text-xs text-stone-500">
+            Em branco usa o default do tipo. Aplica imediatamente no canvas.
+          </p>
         </div>
 
         {/* Campos específicos do tipo Documento (Fluxos Administrativos).

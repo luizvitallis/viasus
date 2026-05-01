@@ -57,6 +57,8 @@ interface InitialNode {
   documento_categoria?: string | null;
   documento_acao?: string | null;
   documento_link?: string | null;
+  color_bg?: string | null;
+  color_border?: string | null;
 }
 
 interface InitialEdge {
@@ -66,6 +68,7 @@ interface InitialEdge {
   label: string | null;
   style: EdgeStyle;
   condition_expr: unknown;
+  color_stroke?: string | null;
 }
 
 interface ProtocolEditorProps {
@@ -96,18 +99,20 @@ function nodeFromInitial(n: InitialNode): Node {
       documento_categoria: n.documento_categoria ?? null,
       documento_acao: n.documento_acao ?? null,
       documento_link: n.documento_link ?? null,
+      color_bg: n.color_bg ?? null,
+      color_border: n.color_border ?? null,
     },
   };
 }
 
 function edgeFromInitial(e: InitialEdge): Edge {
-  const styleProps = getEdgeStyleProps(e.style);
+  const styleProps = getEdgeStyleProps(e.style, e.color_stroke ?? null);
   return {
     id: e.id,
     source: e.source_node_id,
     target: e.target_node_id,
     label: e.label ?? undefined,
-    data: { style: e.style },
+    data: { style: e.style, color_stroke: e.color_stroke ?? null },
     ...styleProps,
   };
 }
@@ -201,7 +206,7 @@ function ProtocolEditorInner({
         target: connection.target!,
         sourceHandle: connection.sourceHandle ?? undefined,
         targetHandle: connection.targetHandle ?? undefined,
-        data: { style: "normal" as EdgeStyle },
+        data: { style: "normal" as EdgeStyle, color_stroke: null },
         ...getEdgeStyleProps("normal"),
       };
       setEdges((eds) => addEdge(newEdge, eds));
@@ -223,14 +228,13 @@ function ProtocolEditorInner({
           label: "Novo nó",
           content: { type: "doc", content: [] },
           tags: [],
-          // Defaults pra nó tipo documento (Fluxos Administrativos).
-          // Cast pra string porque NodeType só inclui 'documento' depois
-          // da migration 0007 aplicada + types regenerados.
           documento_categoria:
             (type as string) === "documento" ? "impresso" : null,
           documento_acao:
             (type as string) === "documento" ? "anexar_e_levar" : null,
           documento_link: null,
+          color_bg: null,
+          color_border: null,
         },
       };
       setNodes((ns) => [...ns, newNode]);
@@ -283,16 +287,37 @@ function ProtocolEditorInner({
   );
 
   const onUpdateEdge = useCallback(
-    (id: string, patch: { label?: string; style?: string }) => {
+    (
+      id: string,
+      patch: { label?: string; style?: string; color_stroke?: string | null },
+    ) => {
       setEdges((es) =>
         es.map((e) => {
           if (e.id !== id) return e;
           const next: Edge = { ...e };
           if (patch.label !== undefined) next.label = patch.label || undefined;
-          if (patch.style !== undefined) {
-            const styleEnum = patch.style as EdgeStyle;
-            const props = getEdgeStyleProps(styleEnum);
-            next.data = { ...(e.data ?? {}), style: styleEnum };
+
+          // Determina se temos que recomputar visuais (mudou style OU cor)
+          const styleChanged = patch.style !== undefined;
+          const colorChanged = patch.color_stroke !== undefined;
+          if (styleChanged || colorChanged) {
+            const currentData = (e.data ?? {}) as {
+              style?: EdgeStyle;
+              color_stroke?: string | null;
+            };
+            const styleEnum = (patch.style ??
+              currentData.style ??
+              "normal") as EdgeStyle;
+            const colorStroke =
+              patch.color_stroke !== undefined
+                ? patch.color_stroke
+                : (currentData.color_stroke ?? null);
+            const props = getEdgeStyleProps(styleEnum, colorStroke);
+            next.data = {
+              ...(e.data ?? {}),
+              style: styleEnum,
+              color_stroke: colorStroke,
+            };
             next.type = props.type;
             next.style = props.style;
             next.markerEnd = props.markerEnd;
@@ -334,6 +359,8 @@ function ProtocolEditorInner({
           documento_categoria: (n.data?.documento_categoria as string | null) ?? null,
           documento_acao: (n.data?.documento_acao as string | null) ?? null,
           documento_link: (n.data?.documento_link as string | null) ?? null,
+          color_bg: (n.data?.color_bg as string | null) ?? null,
+          color_border: (n.data?.color_border as string | null) ?? null,
         })),
         edges: edges.map((e) => ({
           id: e.id,
@@ -341,6 +368,7 @@ function ProtocolEditorInner({
           target_node_id: e.target,
           label: typeof e.label === "string" ? e.label : null,
           style: ((e.data?.style as EdgeStyle) ?? "normal") as EdgeStyle,
+          color_stroke: (e.data?.color_stroke as string | null) ?? null,
         })),
       };
       const result = await saveProtocolGraph(payload);
@@ -387,6 +415,8 @@ function ProtocolEditorInner({
         documento_categoria: (n.data?.documento_categoria as string | null) ?? null,
         documento_acao: (n.data?.documento_acao as string | null) ?? null,
         documento_link: (n.data?.documento_link as string | null) ?? null,
+        color_bg: (n.data?.color_bg as string | null) ?? null,
+        color_border: (n.data?.color_border as string | null) ?? null,
       },
     };
   }, [selectedNodeId, nodes]);
@@ -399,6 +429,7 @@ function ProtocolEditorInner({
       id: e.id,
       label: typeof e.label === "string" ? e.label : null,
       style: ((e.data?.style as string) ?? "normal"),
+      color_stroke: (e.data?.color_stroke as string | null) ?? null,
     };
   }, [selectedEdgeId, edges]);
 

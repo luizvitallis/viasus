@@ -39,6 +39,8 @@ interface SnapshotNode {
   documento_categoria?: string | null;
   documento_acao?: string | null;
   documento_link?: string | null;
+  color_bg?: string | null;
+  color_border?: string | null;
 }
 
 interface SnapshotEdge {
@@ -48,6 +50,7 @@ interface SnapshotEdge {
   label: string | null;
   style: string;
   condition_expr: unknown;
+  color_stroke?: string | null;
 }
 
 interface Snapshot {
@@ -230,6 +233,8 @@ export default async function ProtocolViewerPage({ params }: PageProps) {
                 documento_categoria: n.documento_categoria ?? null,
                 documento_acao: n.documento_acao ?? null,
                 documento_link: n.documento_link ?? null,
+                color_bg: n.color_bg ?? null,
+                color_border: n.color_border ?? null,
               }))}
               edges={(snapshot.edges ?? []).map((e) => ({
                 id: e.id,
@@ -237,6 +242,7 @@ export default async function ProtocolViewerPage({ params }: PageProps) {
                 target_node_id: e.target_node_id,
                 label: e.label,
                 style: e.style as EdgeStyle,
+                color_stroke: e.color_stroke ?? null,
               }))}
             />
           );

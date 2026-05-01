@@ -31,11 +31,25 @@ interface ViaNodeProps extends NodeProps {
 const handleStyle = "!size-2 !bg-stone-50 !border-2 !border-stone-900";
 const widthCls = "min-w-[180px] max-w-[260px]";
 
+/**
+ * Lê cores customizadas do `data` do nó. Inline style sobrescreve as
+ * cores default vindas do Tailwind (mais especificidade).
+ */
+function customColorStyle(data: ViaNodeData): React.CSSProperties {
+  const bg = (data.color_bg as string | null) ?? null;
+  const border = (data.color_border as string | null) ?? null;
+  const style: React.CSSProperties = {};
+  if (bg) style.backgroundColor = bg;
+  if (border) style.borderColor = border;
+  return style;
+}
+
 // ---------- 1. ponto_atencao ----------
 function PontoAtencaoNode({ data, selected }: ViaNodeProps) {
   return (
     <div
       className={`${widthCls} px-4 py-3 rounded-md bg-white border-2 border-stone-900 shadow-sm ${selected ? "ring-2 ring-emerald-700 ring-offset-2 ring-offset-stone-50" : ""}`}
+      style={customColorStyle(data)}
     >
       <Handle type="target" position={Position.Top} className={handleStyle} />
       <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-stone-500 mb-1">
@@ -63,6 +77,7 @@ function DecisaoNode({ data, selected }: ViaNodeProps) {
       />
       <div
         className="absolute inset-4 bg-amber-50 border-2 border-amber-700 rotate-45"
+        style={customColorStyle(data)}
         aria-hidden
       />
       <div className="relative max-w-[110px] text-center">
@@ -103,6 +118,7 @@ function CondutaIntermediariaNode({ data, selected }: ViaNodeProps) {
   return (
     <div
       className={`${widthCls} px-4 py-3 bg-white border-2 border-stone-700 ${selected ? "ring-2 ring-emerald-700 ring-offset-2 ring-offset-stone-50" : ""}`}
+      style={customColorStyle(data)}
     >
       <Handle type="target" position={Position.Top} className={handleStyle} />
       <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-stone-500 mb-1">
@@ -118,9 +134,19 @@ function CondutaIntermediariaNode({ data, selected }: ViaNodeProps) {
 
 // ---------- 4. conduta_terminal (borda dupla) ----------
 function CondutaTerminalNode({ data, selected }: ViaNodeProps) {
+  // borda dupla = border + outline. Cor customizada aplica em ambos.
+  const customBg = (data.color_bg as string | null) ?? null;
+  const customBorder = (data.color_border as string | null) ?? null;
+  const wrapperStyle: React.CSSProperties = {};
+  if (customBg) wrapperStyle.backgroundColor = customBg;
+  if (customBorder) {
+    wrapperStyle.borderColor = customBorder;
+    wrapperStyle.outlineColor = customBorder;
+  }
   return (
     <div
       className={`${widthCls} bg-white border-2 border-emerald-800 outline outline-2 outline-emerald-800 outline-offset-[3px] ${selected ? "ring-2 ring-emerald-700 ring-offset-[7px] ring-offset-stone-50" : ""}`}
+      style={wrapperStyle}
     >
       <Handle type="target" position={Position.Top} className={handleStyle} />
       <div className="px-4 py-3">
@@ -140,6 +166,7 @@ function EncaminhamentoNode({ data, selected }: ViaNodeProps) {
   return (
     <div
       className={`${widthCls} px-4 py-3 bg-red-50 border-2 border-red-700 ${selected ? "ring-2 ring-emerald-700 ring-offset-2 ring-offset-stone-50" : ""}`}
+      style={customColorStyle(data)}
     >
       <Handle type="target" position={Position.Top} className={handleStyle} />
       <div className="flex items-start gap-2">
@@ -162,6 +189,7 @@ function CalculadoraNode({ data, selected }: ViaNodeProps) {
   return (
     <div
       className={`${widthCls} px-4 py-3 bg-stone-50 border-2 border-dashed border-stone-900 ${selected ? "ring-2 ring-emerald-700 ring-offset-2 ring-offset-stone-50" : ""}`}
+      style={customColorStyle(data)}
     >
       <Handle type="target" position={Position.Top} className={handleStyle} />
       <div className="flex items-start gap-2">
@@ -212,6 +240,7 @@ function DocumentoNode({ data, selected }: ViaNodeProps) {
   return (
     <div
       className={`${widthCls} bg-white border-2 border-stone-700 ${selected ? "ring-2 ring-emerald-700 ring-offset-2 ring-offset-stone-50" : ""}`}
+      style={customColorStyle(data)}
     >
       <Handle type="target" position={Position.Top} className={handleStyle} />
 

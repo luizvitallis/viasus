@@ -33,6 +33,8 @@ interface ViewerNode {
   documento_categoria?: string | null;
   documento_acao?: string | null;
   documento_link?: string | null;
+  color_bg?: string | null;
+  color_border?: string | null;
 }
 
 interface ViewerEdge {
@@ -41,6 +43,7 @@ interface ViewerEdge {
   target_node_id: string;
   label: string | null;
   style: EdgeStyle;
+  color_stroke?: string | null;
 }
 
 interface ProtocolViewerProps {
@@ -63,6 +66,8 @@ function nodeFromViewer(n: ViewerNode): Node {
       documento_categoria: n.documento_categoria ?? null,
       documento_acao: n.documento_acao ?? null,
       documento_link: n.documento_link ?? null,
+      color_bg: n.color_bg ?? null,
+      color_border: n.color_border ?? null,
     },
     draggable: false,
     connectable: false,
@@ -72,13 +77,13 @@ function nodeFromViewer(n: ViewerNode): Node {
 }
 
 function edgeFromViewer(e: ViewerEdge): Edge {
-  const styleProps = getEdgeStyleProps(e.style);
+  const styleProps = getEdgeStyleProps(e.style, e.color_stroke ?? null);
   return {
     id: e.id,
     source: e.source_node_id,
     target: e.target_node_id,
     label: e.label ?? undefined,
-    data: { style: e.style },
+    data: { style: e.style, color_stroke: e.color_stroke ?? null },
     selectable: false,
     deletable: false,
     ...styleProps,
