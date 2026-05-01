@@ -137,13 +137,13 @@ export default async function TenantPage({
       <WaveHeader />
 
       {/* Faixa institucional */}
-      <header className="bg-stone-950 text-stone-50">
+      <header className="bg-[var(--color-caucaia-red)] text-white">
         <div className="mx-auto max-w-6xl px-6 py-2.5 flex items-center justify-between text-[11px] font-mono uppercase tracking-[0.18em]">
-          <Link href="/" className="hover:text-stone-300 transition-colors flex items-center gap-2">
-            <HeartPulse className="size-3.5 text-[var(--color-caucaia-red)]" />
+          <Link href="/" className="hover:text-white/80 transition-colors flex items-center gap-2">
+            <HeartPulse className="size-3.5 text-white" />
             ViaSus · plataforma
           </Link>
-          <span className="hidden sm:inline text-stone-400">acesso público</span>
+          <span className="hidden sm:inline text-white/75">acesso público</span>
         </div>
       </header>
 

@@ -114,11 +114,11 @@ export function ReferralViewer({
 
         {/* Coluna 2 — Justificativa em tempo real */}
         <aside className="lg:col-span-5 lg:order-2 order-1 lg:sticky lg:top-20 lg:self-start">
-          <div className="bg-stone-950 text-stone-50 px-4 py-2 flex items-center justify-between">
+          <div className="bg-[var(--color-caucaia-red)] text-white px-4 py-2 flex items-center justify-between">
             <p className="font-mono text-[11px] uppercase tracking-[0.18em]">
               Justificativa pra prontuário
             </p>
-            <span className="font-mono text-[11px] tracking-[0.14em] text-stone-400">
+            <span className="font-mono text-[11px] tracking-[0.14em] text-white/75">
               {totalChecked} marcado{totalChecked === 1 ? "" : "s"}
             </span>
           </div>

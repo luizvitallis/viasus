@@ -27,11 +27,11 @@ export function AdminHeader({
 }: AdminHeaderProps) {
   return (
     <>
-      {/* Faixa institucional preta */}
-      <div className="bg-stone-950 text-stone-50">
+      {/* Faixa institucional azul SMS */}
+      <div className="bg-[var(--color-caucaia-red)] text-white">
         <div className="mx-auto max-w-7xl px-6 py-2 flex items-center justify-between text-[11px] font-mono uppercase tracking-[0.18em]">
           <span>{tenantName}</span>
-          <span className="text-stone-400 hidden sm:inline">
+          <span className="text-white/75 hidden sm:inline">
             painel administrativo · {roleLabel[userRole] ?? userRole}
           </span>
         </div>

@@ -137,18 +137,18 @@ export default async function ProtocolViewerPage({ params }: PageProps) {
   return (
     <div className="min-h-screen flex flex-col bg-stone-50">
       {/* Top bar institucional */}
-      <header className="bg-stone-950 text-stone-50 sticky top-0 z-10">
+      <header className="bg-[var(--color-caucaia-red)] text-white sticky top-0 z-10">
         <div className="h-0.5 bg-gradient-to-r from-[var(--color-caucaia-red)] via-stone-700 to-emerald-700" />
         <div className="mx-auto max-w-6xl px-4 sm:px-6 py-2 flex items-center justify-between gap-4 text-[11px] font-mono uppercase tracking-[0.18em]">
           <Link
             href={`/${tenant}`}
-            className="inline-flex items-center gap-1.5 hover:text-stone-300 transition-colors min-w-0"
+            className="inline-flex items-center gap-1.5 hover:text-white/80 transition-colors min-w-0"
           >
             <ArrowLeft className="size-3.5 shrink-0" />
             <span className="truncate">{tenantRow.name}</span>
           </Link>
-          <span className="text-stone-400 hidden sm:inline shrink-0 flex items-center gap-1.5">
-            <HeartPulse className="size-3 text-[var(--color-caucaia-red)]" />
+          <span className="text-white/75 hidden sm:inline shrink-0 flex items-center gap-1.5">
+            <HeartPulse className="size-3 text-white" />
             visualizador público
           </span>
         </div>

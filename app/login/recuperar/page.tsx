@@ -8,9 +8,9 @@ export const metadata = {
 export default function RecuperarPage() {
   return (
     <div className="min-h-screen flex flex-col bg-stone-50">
-      <header className="bg-stone-950 text-stone-50">
+      <header className="bg-[var(--color-caucaia-red)] text-white">
         <div className="mx-auto max-w-6xl px-6 py-2.5 flex items-center justify-between text-[11px] font-mono uppercase tracking-[0.18em]">
-          <Link href="/login" className="hover:text-stone-300 transition-colors">
+          <Link href="/login" className="hover:text-white/80 transition-colors">
             ViaSus · voltar ao login
           </Link>
         </div>
