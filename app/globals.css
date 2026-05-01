@@ -18,11 +18,12 @@
   --color-paper: #fafaf7;
   --color-ink: #0c0a09;
 
-  /* Cores institucionais de Caucaia (do brasão municipal) — usadas como
-     toques institucionais, não predominantes. */
-  --color-caucaia-red: #c41e3a;
-  --color-caucaia-red-soft: #fce8eb;
-  --color-caucaia-red-deep: #8b0e22;
+  /* Cor institucional da SMS Caucaia — azul + branco como base.
+     A variável continua nomeada `caucaia-red` por compatibilidade com
+     todos os usos existentes; o valor é o azul institucional novo. */
+  --color-caucaia-red: #145bb8;
+  --color-caucaia-red-soft: #e2eef9;
+  --color-caucaia-red-deep: #0d3f80;
   --color-caucaia-gray: #6b6b6b;
   --color-caucaia-gray-soft: #c4c4c4;
 

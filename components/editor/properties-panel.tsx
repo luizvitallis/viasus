@@ -53,7 +53,7 @@ interface PropertiesPanelProps {
 
 const COLOR_PRESETS = [
   "#1c1917", // ink
-  "#c41e3a", // caucaia red
+  "#145bb8", // azul sms
   "#1e5b9e", // clinical blue
   "#166534", // emerald-800
   "#b91c1c", // red-700

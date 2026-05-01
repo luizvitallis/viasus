@@ -45,7 +45,7 @@ export function HealthPattern({
             <g
               transform="translate(95,30)"
               fill="none"
-              stroke="#c41e3a"
+              stroke="#145bb8"
               strokeWidth="2"
               strokeLinecap="round"
               strokeLinejoin="round"
@@ -72,7 +72,7 @@ export function HealthPattern({
             </g>
 
             {/* Coração outline */}
-            <g transform="translate(140,120)" fill="none" stroke="#c41e3a" strokeWidth="2">
+            <g transform="translate(140,120)" fill="none" stroke="#145bb8" strokeWidth="2">
               <path d="M30,8 C30,2 24,0 20,4 C16,0 10,2 10,8 C10,16 20,24 20,24 C20,24 30,16 30,8 Z" />
             </g>
 
@@ -123,12 +123,12 @@ export function HealthcareSilhouettes({
         <g
           opacity="0.20"
           fill="none"
-          stroke="#c41e3a"
+          stroke="#145bb8"
           strokeWidth="2.5"
           strokeLinecap="round"
         >
           <path d="M70,82 Q60,100 60,115 Q60,128 80,128 Q100,128 100,140" />
-          <circle cx="100" cy="148" r="6" fill="#c41e3a" />
+          <circle cx="100" cy="148" r="6" fill="#145bb8" />
         </g>
 
         {/* Silhueta 2 — enfermeira/enfermeiro (touca/lateral) */}
@@ -137,8 +137,8 @@ export function HealthcareSilhouettes({
           {/* Touca */}
           <path d="M200,55 L210,40 L230,40 L240,55 Z" fill="#1c1917" />
           {/* Cruz na touca */}
-          <rect x="217" y="44" width="6" height="2" fill="#c41e3a" opacity="0.8" />
-          <rect x="219" y="42" width="2" height="6" fill="#c41e3a" opacity="0.8" />
+          <rect x="217" y="44" width="6" height="2" fill="#145bb8" opacity="0.8" />
+          <rect x="219" y="42" width="2" height="6" fill="#145bb8" opacity="0.8" />
           {/* Pescoço */}
           <rect x="214" y="83" width="12" height="10" />
           {/* Corpo (uniforme) */}

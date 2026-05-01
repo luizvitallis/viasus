@@ -1,8 +1,9 @@
 /**
- * Faixa decorativa em ondas — paleta institucional de Caucaia.
- * Usada como header sutil em páginas públicas.
+ * Faixa decorativa em ondas — paleta institucional da SMS Caucaia.
+ * Azul institucional + branco + cinzas. Usada como header sutil em
+ * páginas públicas.
  *
- * Pure SVG, sem dependências, sem JS. Stroke-only pra ficar leve.
+ * Pure SVG, sem dependências, sem JS.
  */
 export function WaveHeader({ className }: { className?: string }) {
   return (
@@ -23,18 +24,18 @@ export function WaveHeader({ className }: { className?: string }) {
         <path
           d="M0,60 C240,30 480,90 720,60 C960,30 1200,80 1440,55 L1440,120 L0,120 Z"
           fill="#a6a09b"
-          opacity="0.55"
+          opacity="0.45"
         />
-        {/* Onda cinza escuro */}
+        {/* Onda azul claro (intermediária) */}
         <path
           d="M0,80 C240,100 480,60 720,90 C960,110 1200,70 1440,90 L1440,120 L0,120 Z"
-          fill="#44403b"
-          opacity="0.85"
+          fill="#5a8fcf"
+          opacity="0.65"
         />
-        {/* Onda vermelho Caucaia (mais espessa, no fundo) */}
+        {/* Onda azul institucional SMS (mais espessa, no fundo) */}
         <path
           d="M0,95 C240,75 480,115 720,100 C960,85 1200,110 1440,95 L1440,120 L0,120 Z"
-          fill="#c41e3a"
+          fill="#145bb8"
         />
       </svg>
     </div>
