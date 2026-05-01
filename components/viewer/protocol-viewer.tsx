@@ -102,7 +102,6 @@ function ProtocolViewerInner({
 }: ProtocolViewerProps) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const flow = useReactFlow();
-  const isFirstRender = useRef(true);
 
   // Track open_protocol uma única vez ao montar
   useEffect(() => {
@@ -115,15 +114,24 @@ function ProtocolViewerInner({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Quando o painel abre ou fecha, o canvas muda de largura. Re-fit pra
-  // o profissional não perder visibilidade do fluxograma. Espera ~280ms
-  // pra deixar a transição CSS terminar antes de calcular o novo bbox.
+  // Re-fit do canvas APENAS quando o painel TOGGLE (abre OU fecha).
+  // Usamos um ref que armazena o último estado conhecido. O efeito só
+  // dispara fitView se o estado MUDOU desde a última observação — protege
+  // contra strict-mode double-render, mudança de referência de `flow`,
+  // ou qualquer re-render acidental que não envolveu toggle de painel.
+  const prevPanelOpen = useRef<boolean | null>(null);
   const isPanelOpen = Boolean(selectedId);
   useEffect(() => {
-    if (isFirstRender.current) {
-      isFirstRender.current = false;
+    // Primeira observação: só registra, sem fitView. Garante que o
+    // defaultViewport (0.9) é respeitado na carga inicial.
+    if (prevPanelOpen.current === null) {
+      prevPanelOpen.current = isPanelOpen;
       return;
     }
+    // Sem mudança real → não faz nada
+    if (prevPanelOpen.current === isPanelOpen) return;
+    prevPanelOpen.current = isPanelOpen;
+
     const t = setTimeout(() => {
       flow.fitView({ padding: 0.08, duration: 280, maxZoom: 1.2 });
     }, 280);
@@ -196,12 +204,12 @@ function ProtocolViewerInner({
             nodeTypes={viaNodeTypes}
             onNodeClick={handleNodeClick}
             onPaneClick={() => setSelectedId(null)}
-            // Zoom inicial alto (1.3) priorizando legibilidade dos nós.
-            // Aceita cropping na borda inferior (e direita) — o usuário
-            // arrasta pra navegar. Quando clicar num nó, useEffect refita
-            // tudo na nova largura do canvas (que já está bom).
+            // Zoom inicial fixo 0.9. Aceita cropping nas bordas — usuário
+            // arrasta pra navegar. Quando clicar num nó, o useEffect com
+            // ref-guard refita tudo na nova largura do canvas. SEM auto-fit
+            // antes do clique, mesmo em strict-mode double-render.
             // Coords já normalizadas no server pra começar em (0,0).
-            defaultViewport={{ x: 30, y: 24, zoom: 1.3 }}
+            defaultViewport={{ x: 30, y: 24, zoom: 0.9 }}
             minZoom={0.3}
             maxZoom={2.5}
             panOnScroll
