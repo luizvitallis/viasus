@@ -59,6 +59,7 @@ interface InitialNode {
   documento_link?: string | null;
   color_bg?: string | null;
   color_border?: string | null;
+  links?: { id: string; label: string; url: string }[];
 }
 
 interface InitialEdge {
@@ -101,6 +102,7 @@ function nodeFromInitial(n: InitialNode): Node {
       documento_link: n.documento_link ?? null,
       color_bg: n.color_bg ?? null,
       color_border: n.color_border ?? null,
+      links: n.links ?? [],
     },
   };
 }
@@ -235,6 +237,7 @@ function ProtocolEditorInner({
           documento_link: null,
           color_bg: null,
           color_border: null,
+          links: [],
         },
       };
       setNodes((ns) => [...ns, newNode]);
@@ -361,6 +364,7 @@ function ProtocolEditorInner({
           documento_link: (n.data?.documento_link as string | null) ?? null,
           color_bg: (n.data?.color_bg as string | null) ?? null,
           color_border: (n.data?.color_border as string | null) ?? null,
+          links: ((n.data?.links as { id: string; label: string; url: string }[]) ?? []) as { id: string; label: string; url: string }[],
         })),
         edges: edges.map((e) => ({
           id: e.id,
@@ -417,6 +421,9 @@ function ProtocolEditorInner({
         documento_link: (n.data?.documento_link as string | null) ?? null,
         color_bg: (n.data?.color_bg as string | null) ?? null,
         color_border: (n.data?.color_border as string | null) ?? null,
+        links:
+          (n.data?.links as { id: string; label: string; url: string }[]) ??
+          [],
       },
     };
   }, [selectedNodeId, nodes]);

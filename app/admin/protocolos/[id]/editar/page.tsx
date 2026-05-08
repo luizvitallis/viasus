@@ -77,7 +77,7 @@ export default async function EditarProtocoloPage({ params }: PageProps) {
     supabase
       .from("nodes")
       .select(
-        "id, type, label, position_x, position_y, content, tags, documento_categoria, documento_acao, documento_link, color_bg, color_border",
+        "id, type, label, position_x, position_y, content, tags, documento_categoria, documento_acao, documento_link, color_bg, color_border, links",
       )
       .eq("protocol_id", id),
     supabase
@@ -120,6 +120,12 @@ export default async function EditarProtocoloPage({ params }: PageProps) {
             (n as { color_bg?: string | null }).color_bg ?? null,
           color_border:
             (n as { color_border?: string | null }).color_border ?? null,
+          links: Array.isArray(
+            (n as { links?: unknown }).links,
+          )
+            ? ((n as { links: { id: string; label: string; url: string }[] })
+                .links)
+            : [],
         }))}
         initialEdges={(edges ?? []).map((e) => ({
           id: e.id,

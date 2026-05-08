@@ -35,6 +35,17 @@ export type TipTapDoc = {
 };
 
 /**
+ * Link estruturado de referência associado a um nó. Lista live em
+ * `nodes.links` (jsonb). Renderizado no viewer como card <a> nativo
+ * clicável, abaixo do conteúdo TipTap.
+ */
+export interface NodeLink {
+  id: string;
+  label: string;
+  url: string;
+}
+
+/**
  * Protocolos de Encaminhamento — árvore hierárquica de condições/achados
  * com gerador de texto. Salva em `protocols.referral_data` (JSONB).
  */

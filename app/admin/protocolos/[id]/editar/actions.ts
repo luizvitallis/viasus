@@ -27,6 +27,12 @@ const uuidish = z
     "uuid inválido",
   );
 
+const NodeLinkSchema = z.object({
+  id: z.string().min(1),
+  label: z.string().default(""),
+  url: z.string().default(""),
+});
+
 const NodeSchema = z.object({
   id: uuidish,
   type: z.enum(NODE_TYPES),
@@ -41,6 +47,7 @@ const NodeSchema = z.object({
   documento_link: z.string().nullable().optional(),
   color_bg: z.string().nullable().optional(),
   color_border: z.string().nullable().optional(),
+  links: z.array(NodeLinkSchema).default([]),
 });
 
 const EdgeSchema = z.object({
@@ -155,6 +162,7 @@ export async function saveProtocolGraph(payload: unknown): Promise<SaveResult> {
       documento_link: n.documento_link ?? null,
       color_bg: n.color_bg ?? null,
       color_border: n.color_border ?? null,
+      links: (n.links ?? []) as never,
     }));
     const { error } = await supabase.from("nodes").upsert(nodeRows);
     if (error) return { ok: false, error: `Erro salvando nós: ${error.message}` };
@@ -336,7 +344,7 @@ export async function publishProtocol(payload: unknown): Promise<PublishResult> 
   const [{ data: nodes }, { data: edges }] = await Promise.all([
     supabase
       .from("nodes")
-      .select("id, type, label, position_x, position_y, content, tags, calculator_type, links_to_protocol_id, encaminhamento_target_id, documento_categoria, documento_acao, documento_link, color_bg, color_border")
+      .select("id, type, label, position_x, position_y, content, tags, calculator_type, links_to_protocol_id, encaminhamento_target_id, documento_categoria, documento_acao, documento_link, color_bg, color_border, links")
       .eq("protocol_id", protocol.id),
     supabase
       .from("edges")

@@ -11,7 +11,7 @@ import {
   type Node,
 } from "@xyflow/react";
 // xyflow CSS é importado em app/globals.css.
-import { X } from "lucide-react";
+import { ExternalLink, X } from "lucide-react";
 import { viaNodeTypes } from "@/components/editor/nodes";
 import { getEdgeStyleProps } from "@/components/editor/edge-styles";
 import {
@@ -35,6 +35,7 @@ interface ViewerNode {
   documento_link?: string | null;
   color_bg?: string | null;
   color_border?: string | null;
+  links?: { id: string; label: string; url: string }[];
 }
 
 interface ViewerEdge {
@@ -68,6 +69,7 @@ function nodeFromViewer(n: ViewerNode): Node {
       documento_link: n.documento_link ?? null,
       color_bg: n.color_bg ?? null,
       color_border: n.color_border ?? null,
+      links: n.links ?? [],
     },
     draggable: false,
     connectable: false,
@@ -299,6 +301,42 @@ function NodeSheetContent({ node, onClose }: NodeSheetProps) {
         </h2>
 
         <NodeContent content={node.content} />
+
+        {node.links && node.links.length > 0 && (
+          <div className="mt-6 pt-4 border-t border-stone-200">
+            <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-stone-500 mb-3">
+              Links de referência
+            </p>
+            <ul className="space-y-2">
+              {node.links.map((link) => {
+                const safeUrl = link.url?.trim() ?? "";
+                const hasUrl = /^https?:\/\//i.test(safeUrl);
+                if (!hasUrl) return null;
+                const label = link.label?.trim() || safeUrl;
+                return (
+                  <li key={link.id}>
+                    <a
+                      href={safeUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-3 px-3 py-2 border-2 border-stone-300 hover:border-emerald-700 hover:bg-emerald-50 transition-colors group"
+                    >
+                      <ExternalLink className="size-4 text-stone-500 group-hover:text-emerald-700 shrink-0" />
+                      <div className="min-w-0 flex-1">
+                        <p className="font-medium text-stone-900 group-hover:text-emerald-900 truncate">
+                          {label}
+                        </p>
+                        <p className="text-xs text-stone-500 font-mono truncate">
+                          {safeUrl}
+                        </p>
+                      </div>
+                    </a>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        )}
 
         {node.tags && node.tags.length > 0 && (
           <div className="mt-6 pt-4 border-t border-stone-200">

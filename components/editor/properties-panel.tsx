@@ -1,6 +1,6 @@
 "use client";
 
-import { Trash2, X } from "lucide-react";
+import { ExternalLink, Plus, Trash2, X } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
@@ -8,6 +8,7 @@ import { TipTapEditor } from "./tiptap-editor";
 import {
   NODE_TYPE_LABEL,
   type NodeType,
+  type NodeLink,
   EDGE_STYLES,
   DOCUMENTO_CATEGORIA_LABEL,
   DOCUMENTO_ACAO_LABEL,
@@ -22,6 +23,7 @@ interface NodeData {
   documento_link?: string | null;
   color_bg?: string | null;
   color_border?: string | null;
+  links?: NodeLink[];
 }
 
 interface SelectedNode {
@@ -116,6 +118,98 @@ function ColorField({
           />
         ))}
       </div>
+    </div>
+  );
+}
+
+function makeId() {
+  if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
+    return crypto.randomUUID();
+  }
+  return Math.random().toString(36).slice(2) + Date.now().toString(36);
+}
+
+function NodeLinksEditor({
+  links,
+  onChange,
+}: {
+  links: NodeLink[];
+  onChange: (next: NodeLink[]) => void;
+}) {
+  const addLink = () => {
+    onChange([...links, { id: makeId(), label: "", url: "" }]);
+  };
+  const updateLink = (id: string, patch: Partial<NodeLink>) => {
+    onChange(links.map((l) => (l.id === id ? { ...l, ...patch } : l)));
+  };
+  const removeLink = (id: string) => {
+    onChange(links.filter((l) => l.id !== id));
+  };
+
+  return (
+    <div className="border-2 border-stone-300 bg-stone-50 p-3 space-y-3">
+      <div className="flex items-center justify-between">
+        <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-stone-700">
+          Links de referência
+        </p>
+        <button
+          type="button"
+          onClick={addLink}
+          className="inline-flex items-center gap-1 text-xs font-medium text-emerald-800 hover:text-emerald-900"
+        >
+          <Plus className="size-3.5" />
+          Adicionar
+        </button>
+      </div>
+
+      {links.length === 0 ? (
+        <p className="text-xs text-stone-500 italic">
+          Nenhum link. Clique em &ldquo;Adicionar&rdquo; pra incluir um link
+          externo (PDF, diretriz, drive…).
+        </p>
+      ) : (
+        <ul className="space-y-2">
+          {links.map((link) => (
+            <li
+              key={link.id}
+              className="border-2 border-stone-300 bg-white p-2 space-y-1.5"
+            >
+              <div className="flex items-center gap-2">
+                <ExternalLink className="size-3.5 text-stone-500 shrink-0" />
+                <input
+                  type="text"
+                  value={link.label}
+                  onChange={(e) =>
+                    updateLink(link.id, { label: e.target.value })
+                  }
+                  placeholder="Rótulo (ex.: Diretriz CONITEC 2026)"
+                  className="flex-1 h-8 border-2 border-stone-200 px-2 text-xs focus-visible:border-emerald-800 focus-visible:outline-none"
+                />
+                <button
+                  type="button"
+                  onClick={() => removeLink(link.id)}
+                  className="text-stone-500 hover:text-destructive p-1"
+                  title="Remover link"
+                >
+                  <Trash2 className="size-3.5" />
+                </button>
+              </div>
+              <input
+                type="url"
+                value={link.url}
+                onChange={(e) => updateLink(link.id, { url: e.target.value })}
+                placeholder="https://..."
+                className="w-full h-8 border-2 border-stone-200 px-2 text-xs font-mono focus-visible:border-emerald-800 focus-visible:outline-none"
+              />
+            </li>
+          ))}
+        </ul>
+      )}
+
+      <p className="text-xs text-stone-500">
+        Cada link aparece como um card clicável abaixo do conteúdo, no
+        visualizador público.
+      </p>
     </div>
   );
 }
@@ -376,6 +470,11 @@ export function PropertiesPanel({
             visualizador.
           </p>
         </div>
+
+        <NodeLinksEditor
+          links={node.data.links ?? []}
+          onChange={(links) => onUpdateNode(node.id, { links })}
+        />
       </div>
 
       <div className="border-t-2 border-stone-900 p-4">

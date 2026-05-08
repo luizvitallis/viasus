@@ -41,6 +41,7 @@ interface SnapshotNode {
   documento_link?: string | null;
   color_bg?: string | null;
   color_border?: string | null;
+  links?: { id: string; label: string; url: string }[] | null;
 }
 
 interface SnapshotEdge {
@@ -235,6 +236,7 @@ export default async function ProtocolViewerPage({ params }: PageProps) {
                 documento_link: n.documento_link ?? null,
                 color_bg: n.color_bg ?? null,
                 color_border: n.color_border ?? null,
+                links: Array.isArray(n.links) ? n.links : [],
               }))}
               edges={(snapshot.edges ?? []).map((e) => ({
                 id: e.id,
