@@ -29,8 +29,12 @@ const toolbarBtnActive = "bg-stone-900 text-stone-50 hover:bg-stone-900";
 export function TipTapEditor({ initialContent, onChange }: TipTapEditorProps) {
   const editor = useEditor({
     extensions: [
+      // StarterKit v3 já inclui Link — desligamos pra usar nossa instância
+      // configurada com autolink/linkOnPaste. Sem isso, "Duplicate extension
+      // names found: ['link']" e nossa config era ignorada.
       StarterKit.configure({
         heading: { levels: [2, 3] },
+        link: false,
       }),
       Link.configure({
         openOnClick: false,

@@ -30,7 +30,13 @@ export function NodeContent({ content }: NodeContentProps) {
     };
     try {
       return generateHTML(doc, [
-        StarterKit.configure({ heading: { levels: [2, 3] } }),
+        // StarterKit v3 já vem com Link incluído. Desabilitamos pra evitar
+        // duplicação ("Duplicate extension names found: ['link']") e
+        // configuramos o Link explicitamente abaixo.
+        StarterKit.configure({
+          heading: { levels: [2, 3] },
+          link: false,
+        }),
         Link.configure({
           HTMLAttributes: {
             target: "_blank",
