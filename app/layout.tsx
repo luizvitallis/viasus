@@ -25,6 +25,11 @@ export const metadata: Metadata = {
   title: "ViaSus — Protocolos clínicos do SUS, navegáveis",
   description:
     "Plataforma multi-tenant que substitui PDFs de protocolos clínicos por fluxogramas interativos navegáveis. Linhas de Cuidado, PCDTs, Encaminhamento Regulado, POPs e Diretrizes municipais.",
+  icons: {
+    icon: "/icon.png",
+    shortcut: "/icon.png",
+    apple: "/icon.png",
+  },
 };
 
 export const viewport: Viewport = {
