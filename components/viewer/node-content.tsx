@@ -4,9 +4,27 @@ import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Link from "@tiptap/extension-link";
 import { useEffect } from "react";
+import type React from "react";
 
 interface NodeContentProps {
   content: unknown;
+}
+
+/**
+ * Captura cliques em <a> dentro do conteúdo TipTap renderizado e abre
+ * a URL em nova aba. TipTap em modo editable:false intercepta cliques
+ * via ProseMirror e o openOnClick do extension-link nem sempre dispara
+ * de forma confiável — esse handler manual garante o comportamento.
+ */
+function handleAnchorClick(e: React.MouseEvent<HTMLDivElement>) {
+  const target = e.target as HTMLElement;
+  const anchor = target.closest("a");
+  if (!anchor) return;
+  const href = anchor.getAttribute("href");
+  if (!href) return;
+  e.preventDefault();
+  e.stopPropagation();
+  window.open(href, "_blank", "noopener,noreferrer");
 }
 
 export function NodeContent({ content }: NodeContentProps) {
@@ -16,7 +34,8 @@ export function NodeContent({ content }: NodeContentProps) {
       Link.configure({
         openOnClick: true,
         HTMLAttributes: {
-          class: "text-emerald-800 underline underline-offset-2",
+          class:
+            "text-emerald-800 underline underline-offset-2 cursor-pointer break-all",
           target: "_blank",
           rel: "noopener noreferrer",
         },
@@ -46,10 +65,12 @@ export function NodeContent({ content }: NodeContentProps) {
   }, [content, editor]);
 
   if (!editor) {
-    return (
-      <div className="min-h-[100px] animate-pulse bg-stone-100" />
-    );
+    return <div className="min-h-[100px] animate-pulse bg-stone-100" />;
   }
 
-  return <EditorContent editor={editor} />;
+  return (
+    <div onClick={handleAnchorClick} onAuxClick={handleAnchorClick}>
+      <EditorContent editor={editor} />
+    </div>
+  );
 }

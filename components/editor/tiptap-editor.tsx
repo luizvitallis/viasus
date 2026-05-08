@@ -34,8 +34,11 @@ export function TipTapEditor({ initialContent, onChange }: TipTapEditorProps) {
       }),
       Link.configure({
         openOnClick: false,
+        autolink: true, // URL digitada vira link automaticamente
+        linkOnPaste: true, // URL colada vira link automaticamente
         HTMLAttributes: {
-          class: "text-emerald-800 underline underline-offset-2",
+          class:
+            "text-emerald-800 underline underline-offset-2 break-all",
         },
       }),
     ],
