@@ -1,0 +1,24 @@
+name: Keep Supabase Alive
+
+# Plano free do Supabase pausa o projeto após ~7 dias sem atividade no banco.
+# Este job faz uma consulta REST mínima por dia pra manter o projeto ativo.
+# Caveat: o GitHub desativa schedules após 60 dias sem novos commits no repo;
+# por isso mantemos também um cron externo (cron-job.org) como redundância.
+on:
+  schedule:
+    - cron: "17 6 * * *" # diariamente às 06:17 UTC
+  workflow_dispatch: {}
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Supabase REST
+        run: |
+          code=$(curl -s -o /dev/null -w "%{http_code}" -m 30 \
+            "${{ secrets.SUPABASE_URL }}/rest/v1/protocols?select=id&limit=1" \
+            -H "apikey: ${{ secrets.SUPABASE_ANON_KEY }}")
+          echo "HTTP $code"
+          # Qualquer resposta HTTP (2xx/4xx) conta como atividade no banco.
+          # Só falha de conexão (000) é erro real.
+          [ "$code" = "000" ] && exit 1 || exit 0
