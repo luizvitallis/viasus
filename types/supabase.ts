@@ -222,6 +222,7 @@ export type Database = {
       }
       profiles: {
         Row: {
+          active: boolean
           cpf: string | null
           created_at: string
           email: string
@@ -231,6 +232,7 @@ export type Database = {
           tenant_id: string
         }
         Insert: {
+          active?: boolean
           cpf?: string | null
           created_at?: string
           email: string
@@ -240,6 +242,7 @@ export type Database = {
           tenant_id: string
         }
         Update: {
+          active?: boolean
           cpf?: string | null
           created_at?: string
           email?: string

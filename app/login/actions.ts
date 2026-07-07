@@ -23,10 +23,12 @@ async function emailForCpf(cpf: string): Promise<string | null> {
   const admin = createAdminClient();
   const { data } = await admin
     .from("profiles")
-    .select("email")
+    .select("email, active")
     .eq("cpf", cpf)
     .maybeSingle();
-  return data?.email ?? null;
+  // Inativo é tratado como inexistente (não loga).
+  if (!data || !data.active) return null;
+  return data.email;
 }
 
 // ----------------------------------------------------------------------------

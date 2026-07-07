@@ -134,47 +134,144 @@ export async function inviteUserAction(
 }
 
 // ----------------------------------------------------------------------------
-// updateUserCpf — gestor define/corrige o CPF de um usuário já existente
+// Gestão de usuário existente: editar (nome/email/papel/CPF), inativar, excluir
 // ----------------------------------------------------------------------------
 const UuidSchema = z
   .string()
   .regex(/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i);
 
-export interface UpdateCpfResult {
+const ASSIGNABLE_ROLES = [
+  "gestor",
+  "curador",
+  "publicador",
+  "profissional",
+] as const;
+
+export interface UserActionResult {
   ok: boolean;
   error?: string;
 }
 
-export async function updateUserCpfAction(
-  userId: string,
-  cpfRaw: string,
-): Promise<UpdateCpfResult> {
-  if (!UuidSchema.safeParse(userId).success) {
-    return { ok: false, error: "Usuário inválido." };
-  }
-  if (!isValidCpf(cpfRaw)) return { ok: false, error: "Informe um CPF válido." };
-  const cpf = normalizeCpf(cpfRaw);
-  if (!cpf) return { ok: false, error: "Informe um CPF válido." };
-
+/** Confere que quem chama é gestor/admin; retorna { me } ou um erro. */
+async function requireManager() {
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) return { ok: false, error: "Sessão expirada." };
+  if (!user) return { error: "Sessão expirada." as const };
 
   const { data: me } = await supabase
     .from("profiles")
-    .select("tenant_id, role")
+    .select("id, tenant_id, role")
     .eq("id", user.id)
     .single();
-  if (!me) return { ok: false, error: "Perfil não encontrado." };
+  if (!me) return { error: "Perfil não encontrado." as const };
   if (me.role !== "gestor" && me.role !== "admin") {
-    return { ok: false, error: "Apenas gestores podem alterar o CPF." };
+    return { error: "Apenas gestores podem gerenciar usuários." as const };
+  }
+  return { me };
+}
+
+const UpdateUserSchema = z.object({
+  userId: UuidSchema,
+  name: z.string().min(2, "Informe o nome completo."),
+  email: z.string().email("Informe um email válido."),
+  role: z.enum(ASSIGNABLE_ROLES),
+  cpf: z.string().refine((v) => isValidCpf(v), "Informe um CPF válido."),
+});
+
+export interface UpdateUserPayload {
+  userId: string;
+  name: string;
+  email: string;
+  role: string;
+  cpf: string;
+}
+
+export async function updateUserAction(
+  payload: UpdateUserPayload,
+): Promise<UserActionResult> {
+  const parsed = UpdateUserSchema.safeParse(payload);
+  if (!parsed.success) {
+    const fe = parsed.error.flatten().fieldErrors;
+    const first =
+      fe.name?.[0] ?? fe.email?.[0] ?? fe.role?.[0] ?? fe.cpf?.[0];
+    return { ok: false, error: first ?? "Confira os campos." };
+  }
+
+  const gate = await requireManager();
+  if ("error" in gate) return { ok: false, error: gate.error };
+  const { me } = gate;
+
+  const { userId, name, email, role } = parsed.data;
+  const cpf = normalizeCpf(parsed.data.cpf);
+  if (!cpf) return { ok: false, error: "Informe um CPF válido." };
+
+  // Não deixar o gestor remover o próprio papel de gestão (evita se travar).
+  if (userId === me.id && role !== "gestor" && me.role === "gestor") {
+    return { ok: false, error: "Você não pode remover seu próprio papel de gestão." };
   }
 
   const admin = createAdminClient();
+  const { data: target } = await admin
+    .from("profiles")
+    .select("id, tenant_id, email")
+    .eq("id", userId)
+    .single();
+  if (!target) return { ok: false, error: "Usuário não encontrado." };
+  if (target.tenant_id !== me.tenant_id) {
+    return { ok: false, error: "Cross-tenant negado." };
+  }
 
-  // Alvo precisa ser do mesmo tenant.
+  const { data: clash } = await admin
+    .from("profiles")
+    .select("id")
+    .eq("cpf", cpf)
+    .neq("id", userId)
+    .maybeSingle();
+  if (clash) return { ok: false, error: "Já existe um usuário com esse CPF." };
+
+  // Trocar email atualiza a identidade no Supabase Auth também.
+  if (email !== target.email) {
+    const { error: authErr } = await admin.auth.admin.updateUserById(userId, {
+      email,
+      email_confirm: true,
+    });
+    if (authErr) {
+      const msg = authErr.message.toLowerCase();
+      if (msg.includes("already") || msg.includes("registered")) {
+        return { ok: false, error: "Já existe um usuário com esse email." };
+      }
+      return { ok: false, error: `Erro ao atualizar email: ${authErr.message}` };
+    }
+  }
+
+  const { error } = await admin
+    .from("profiles")
+    .update({ name, email, role, cpf })
+    .eq("id", userId);
+  if (error) return { ok: false, error: `Erro ao salvar: ${error.message}` };
+
+  revalidatePath("/admin/usuarios");
+  return { ok: true };
+}
+
+export async function setUserActiveAction(
+  userId: string,
+  active: boolean,
+): Promise<UserActionResult> {
+  if (!UuidSchema.safeParse(userId).success) {
+    return { ok: false, error: "Usuário inválido." };
+  }
+  const gate = await requireManager();
+  if ("error" in gate) return { ok: false, error: gate.error };
+  const { me } = gate;
+
+  if (userId === me.id && !active) {
+    return { ok: false, error: "Você não pode inativar a si mesmo." };
+  }
+
+  const admin = createAdminClient();
   const { data: target } = await admin
     .from("profiles")
     .select("id, tenant_id")
@@ -185,22 +282,51 @@ export async function updateUserCpfAction(
     return { ok: false, error: "Cross-tenant negado." };
   }
 
-  // CPF único global (ignorando o próprio usuário).
-  const { data: clash } = await admin
-    .from("profiles")
-    .select("id")
-    .eq("cpf", cpf)
-    .neq("id", userId)
-    .maybeSingle();
-  if (clash) {
-    return { ok: false, error: "Já existe um usuário com esse CPF." };
-  }
-
   const { error } = await admin
     .from("profiles")
-    .update({ cpf })
+    .update({ active })
     .eq("id", userId);
-  if (error) return { ok: false, error: `Erro ao salvar: ${error.message}` };
+  if (error) return { ok: false, error: `Erro: ${error.message}` };
+
+  // Espelha no Auth: banir invalida a sessão no refresh; "none" reativa.
+  await admin.auth.admin.updateUserById(userId, {
+    ban_duration: active ? "none" : "876000h",
+  });
+
+  revalidatePath("/admin/usuarios");
+  return { ok: true };
+}
+
+export async function deleteUserAction(
+  userId: string,
+): Promise<UserActionResult> {
+  if (!UuidSchema.safeParse(userId).success) {
+    return { ok: false, error: "Usuário inválido." };
+  }
+  const gate = await requireManager();
+  if ("error" in gate) return { ok: false, error: gate.error };
+  const { me } = gate;
+
+  if (userId === me.id) {
+    return { ok: false, error: "Você não pode excluir a si mesmo." };
+  }
+
+  const admin = createAdminClient();
+  const { data: target } = await admin
+    .from("profiles")
+    .select("id, tenant_id")
+    .eq("id", userId)
+    .single();
+  if (!target) return { ok: false, error: "Usuário não encontrado." };
+  if (target.tenant_id !== me.tenant_id) {
+    return { ok: false, error: "Cross-tenant negado." };
+  }
+
+  // Apaga o auth user; o profile cai por cascade (profiles.id → auth.users).
+  // Protocolos criados/curados por ele permanecem (autor vira null, ON DELETE
+  // SET NULL nas FKs owner_curator_id/created_by).
+  const { error } = await admin.auth.admin.deleteUser(userId);
+  if (error) return { ok: false, error: `Erro ao excluir: ${error.message}` };
 
   revalidatePath("/admin/usuarios");
   return { ok: true };
