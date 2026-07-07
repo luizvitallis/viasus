@@ -222,6 +222,7 @@ export type Database = {
       }
       profiles: {
         Row: {
+          cpf: string | null
           created_at: string
           email: string
           id: string
@@ -230,6 +231,7 @@ export type Database = {
           tenant_id: string
         }
         Insert: {
+          cpf?: string | null
           created_at?: string
           email: string
           id: string
@@ -238,6 +240,7 @@ export type Database = {
           tenant_id: string
         }
         Update: {
+          cpf?: string | null
           created_at?: string
           email?: string
           id?: string

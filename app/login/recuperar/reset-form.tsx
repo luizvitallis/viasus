@@ -3,8 +3,8 @@
 import { useActionState } from "react";
 import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { CpfInput } from "@/components/shared/cpf-input";
 import { requestPasswordResetAction, type ResetState } from "../actions";
 
 export function ResetForm() {
@@ -19,8 +19,8 @@ export function ResetForm() {
         role="status"
         className="border-l-2 border-emerald-800 bg-emerald-50 px-4 py-4 text-sm text-emerald-950"
       >
-        Pronto. Se o email estiver cadastrado, você vai receber um link em alguns
-        minutos. Cheque também a caixa de spam.
+        Pronto. Se o CPF estiver cadastrado, o link vai chegar no email vinculado
+        em alguns minutos. Cheque também a caixa de spam.
       </div>
     );
   }
@@ -28,18 +28,16 @@ export function ResetForm() {
   return (
     <form action={action} className="space-y-5" noValidate>
       <div className="space-y-2">
-        <Label htmlFor="email">Email institucional</Label>
-        <Input
-          id="email"
-          name="email"
-          type="email"
-          autoComplete="email"
+        <Label htmlFor="cpf">CPF</Label>
+        <CpfInput
+          id="cpf"
+          name="cpf"
+          autoComplete="username"
           required
-          placeholder="seu.nome@viasus.test"
-          aria-invalid={Boolean(state?.fieldErrors?.email)}
+          aria-invalid={Boolean(state?.fieldErrors?.cpf)}
         />
-        {state?.fieldErrors?.email && (
-          <p className="text-sm text-destructive">{state.fieldErrors.email[0]}</p>
+        {state?.fieldErrors?.cpf && (
+          <p className="text-sm text-destructive">{state.fieldErrors.cpf[0]}</p>
         )}
       </div>
 

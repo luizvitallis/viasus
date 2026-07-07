@@ -5,6 +5,7 @@ import { Loader2, Copy, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { CpfInput } from "@/components/shared/cpf-input";
 import { inviteUserAction, type InviteState } from "./actions";
 
 export function InviteForm() {
@@ -111,6 +112,23 @@ export function InviteForm() {
             </p>
           )}
         </div>
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="cpf">CPF</Label>
+        <CpfInput
+          id="cpf"
+          name="cpf"
+          required
+          aria-invalid={Boolean(state?.fieldErrors?.cpf)}
+        />
+        <p className="text-xs text-stone-500">
+          É por ele que o editor vai entrar no sistema. O email fica só para
+          recuperar a senha.
+        </p>
+        {state?.fieldErrors?.cpf && (
+          <p className="text-sm text-destructive">{state.fieldErrors.cpf[0]}</p>
+        )}
       </div>
 
       <div className="space-y-2">

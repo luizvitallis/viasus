@@ -25,8 +25,8 @@ export default function RecuperarPage() {
             Receber link por email
           </h1>
           <p className="text-stone-600 mb-8">
-            Informe seu email institucional. Vamos enviar um link mágico para você
-            entrar e redefinir a senha.
+            Informe seu CPF. Vamos enviar um link mágico para o email vinculado à
+            sua conta, para você entrar e redefinir a senha.
           </p>
 
           <ResetForm />

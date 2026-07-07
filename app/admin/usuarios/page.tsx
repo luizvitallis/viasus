@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { InviteForm } from "./invite-form";
+import { UserCpfEditor } from "./user-cpf-editor";
 
 export const metadata = {
   title: "Usuários — ViaSus",
@@ -32,7 +33,7 @@ export default async function UsuariosPage() {
   // RLS já filtra pelo tenant do user — todos os profiles do tenant
   const { data: profiles } = await supabase
     .from("profiles")
-    .select("id, name, email, role, created_at")
+    .select("id, name, email, cpf, role, created_at")
     .order("created_at", { ascending: false });
 
   return (
@@ -79,7 +80,14 @@ export default async function UsuariosPage() {
               </span>
               <div className="lg:col-span-5">
                 <p className="font-medium text-stone-950">{p.name ?? "—"}</p>
-                <p className="text-sm text-stone-600 font-mono">{p.email}</p>
+                <p className="text-xs text-stone-500 font-mono">{p.email}</p>
+                <div className="mt-1.5">
+                  <UserCpfEditor
+                    userId={p.id}
+                    currentCpf={p.cpf}
+                    canEdit={canInvite}
+                  />
+                </div>
               </div>
               <div className="lg:col-span-3 flex items-start">
                 <span className="inline-flex items-center px-2.5 py-1 border-2 border-stone-900 font-mono text-[11px] uppercase tracking-[0.14em] text-stone-900 bg-stone-50">
