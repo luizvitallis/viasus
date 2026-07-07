@@ -15,7 +15,7 @@ export default async function AdminLayout({
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("name, email, role, tenant_id")
+    .select("name, email, role, tenant_id, active")
     .eq("id", user.id)
     .single();
 
@@ -24,6 +24,12 @@ export default async function AdminLayout({
   if (!profile) {
     await supabase.auth.signOut();
     redirect("/login?error=perfil_nao_encontrado");
+  }
+
+  // Conta inativada pelo gestor: derruba a sessão no próximo request.
+  if (!profile.active) {
+    await supabase.auth.signOut();
+    redirect("/login?error=conta_inativa");
   }
 
   const { data: tenant } = await supabase
