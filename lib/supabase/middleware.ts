@@ -26,7 +26,20 @@ export async function updateSession(request: NextRequest) {
   );
 
   // Must run before any auth-dependent logic — refreshes the session token.
-  await supabase.auth.getUser();
+  // Fail-safe: se o Supabase estiver indisponível (ex.: projeto free pausado),
+  // não trave a app inteira. Após ~3s tratamos como deslogado e seguimos; o
+  // guard de /admin então redireciona pro /login em vez de estourar 504
+  // MIDDLEWARE_INVOCATION_TIMEOUT na Vercel.
+  const timeout = new Promise<null>((resolve) =>
+    setTimeout(() => resolve(null), 3000),
+  );
+  await Promise.race([
+    supabase.auth
+      .getUser()
+      .then((x) => x.data.user)
+      .catch(() => null),
+    timeout,
+  ]);
 
   return supabaseResponse;
 }
