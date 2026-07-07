@@ -571,6 +571,7 @@ export type Database = {
         | "archive"
         | "fork"
         | "view"
+        | "delete_protocol"
       edge_style: "normal" | "urgente" | "condicional"
       node_type:
         | "ponto_atencao"
@@ -723,6 +724,7 @@ export const Constants = {
         "archive",
         "fork",
         "view",
+        "delete_protocol",
       ],
       edge_style: ["normal", "urgente", "condicional"],
       node_type: [
