@@ -4,6 +4,8 @@ import { z } from "zod";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { isValidCpf, normalizeCpf } from "@/lib/cpf";
 
 async function getOrigin() {
   const h = await headers();
@@ -12,17 +14,32 @@ async function getOrigin() {
   return `${proto}://${host}`;
 }
 
+/**
+ * Resolve o email (identidade interna do Supabase Auth) a partir do CPF.
+ * Usa a service key (ignora RLS) e roda só no servidor — o CPF→email nunca é
+ * exposto ao browser. Retorna null se não houver perfil com aquele CPF.
+ */
+async function emailForCpf(cpf: string): Promise<string | null> {
+  const admin = createAdminClient();
+  const { data } = await admin
+    .from("profiles")
+    .select("email")
+    .eq("cpf", cpf)
+    .maybeSingle();
+  return data?.email ?? null;
+}
+
 // ----------------------------------------------------------------------------
-// signIn — login com email + senha
+// signIn — login com CPF + senha
 // ----------------------------------------------------------------------------
 const SignInSchema = z.object({
-  email: z.string().email("Informe um email válido."),
+  cpf: z.string().refine((v) => isValidCpf(v), "Informe um CPF válido."),
   password: z.string().min(1, "Informe a senha."),
 });
 
 export interface SignInState {
   error?: string;
-  fieldErrors?: { email?: string[]; password?: string[] };
+  fieldErrors?: { cpf?: string[]; password?: string[] };
 }
 
 export async function signInAction(
@@ -30,7 +47,7 @@ export async function signInAction(
   formData: FormData,
 ): Promise<SignInState> {
   const parsed = SignInSchema.safeParse({
-    email: formData.get("email"),
+    cpf: formData.get("cpf"),
     password: formData.get("password"),
   });
 
@@ -38,51 +55,62 @@ export async function signInAction(
     return { fieldErrors: parsed.error.flatten().fieldErrors };
   }
 
+  const cpf = normalizeCpf(parsed.data.cpf);
+  if (!cpf) return { error: "CPF ou senha inválidos." };
+
+  // CPF → email (privilegiado, server-only)
+  const email = await emailForCpf(cpf);
+  // Mensagem genérica sempre — não revela se o CPF existe.
+  if (!email) return { error: "CPF ou senha inválidos." };
+
   const supabase = await createClient();
-  const { error } = await supabase.auth.signInWithPassword(parsed.data);
+  const { error } = await supabase.auth.signInWithPassword({
+    email,
+    password: parsed.data.password,
+  });
 
   if (error) {
-    // Mensagem genérica — não vazar se email existe
-    return { error: "Email ou senha inválidos." };
+    return { error: "CPF ou senha inválidos." };
   }
 
   redirect("/admin/dashboard");
 }
 
 // ----------------------------------------------------------------------------
-// requestPasswordReset — envia magic link de redefinição
+// requestPasswordReset — recebe CPF, envia magic link ao email cadastrado
 // ----------------------------------------------------------------------------
 const ResetSchema = z.object({
-  email: z.string().email("Informe um email válido."),
+  cpf: z.string().refine((v) => isValidCpf(v), "Informe um CPF válido."),
 });
 
 export interface ResetState {
   error?: string;
   success?: boolean;
-  fieldErrors?: { email?: string[] };
+  fieldErrors?: { cpf?: string[] };
 }
 
 export async function requestPasswordResetAction(
   _prev: ResetState | undefined,
   formData: FormData,
 ): Promise<ResetState> {
-  const parsed = ResetSchema.safeParse({ email: formData.get("email") });
+  const parsed = ResetSchema.safeParse({ cpf: formData.get("cpf") });
   if (!parsed.success) {
     return { fieldErrors: parsed.error.flatten().fieldErrors };
   }
 
-  const supabase = await createClient();
-  const origin = await getOrigin();
+  const cpf = normalizeCpf(parsed.data.cpf);
+  // Sucesso é sempre idêntico (evita enumeração de CPF).
+  if (!cpf) return { success: true };
 
-  const { error } = await supabase.auth.resetPasswordForEmail(parsed.data.email, {
-    redirectTo: `${origin}/auth/callback?next=/admin/dashboard`,
-  });
-
-  if (error) {
-    return { error: "Não foi possível enviar o email. Tente novamente em instantes." };
+  const email = await emailForCpf(cpf);
+  if (email) {
+    const supabase = await createClient();
+    const origin = await getOrigin();
+    await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${origin}/auth/callback?next=/admin/dashboard`,
+    });
   }
 
-  // Sucesso retorna idêntico independente do email existir (evita enumeração)
   return { success: true };
 }
 

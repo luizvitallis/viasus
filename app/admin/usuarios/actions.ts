@@ -5,18 +5,25 @@ import { revalidatePath } from "next/cache";
 import { randomBytes } from "node:crypto";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { isValidCpf, normalizeCpf } from "@/lib/cpf";
 
 const ROLES_INVITABLE = ["curador", "publicador", "profissional"] as const;
 
 const InviteSchema = z.object({
   name: z.string().min(2, "Informe o nome completo."),
   email: z.string().email("Informe um email válido."),
+  cpf: z.string().refine((v) => isValidCpf(v), "Informe um CPF válido."),
   role: z.enum(ROLES_INVITABLE),
 });
 
 export interface InviteState {
   error?: string;
-  fieldErrors?: { name?: string[]; email?: string[]; role?: string[] };
+  fieldErrors?: {
+    name?: string[];
+    email?: string[];
+    cpf?: string[];
+    role?: string[];
+  };
   success?: {
     email: string;
     name: string;
@@ -36,12 +43,16 @@ export async function inviteUserAction(
   const parsed = InviteSchema.safeParse({
     name: formData.get("name"),
     email: formData.get("email"),
+    cpf: formData.get("cpf"),
     role: formData.get("role"),
   });
 
   if (!parsed.success) {
     return { fieldErrors: parsed.error.flatten().fieldErrors };
   }
+
+  const cpf = normalizeCpf(parsed.data.cpf);
+  if (!cpf) return { fieldErrors: { cpf: ["Informe um CPF válido."] } };
 
   // Verificar quem está convidando: precisa ser gestor ou admin
   const supabase = await createClient();
@@ -65,6 +76,17 @@ export async function inviteUserAction(
 
   // Criar auth user via admin API
   const admin = createAdminClient();
+
+  // CPF é único globalmente — checa antes pra dar erro amigável.
+  const { data: cpfClash } = await admin
+    .from("profiles")
+    .select("id")
+    .eq("cpf", cpf)
+    .maybeSingle();
+  if (cpfClash) {
+    return { fieldErrors: { cpf: ["Já existe um usuário com esse CPF."] } };
+  }
+
   const tempPassword = generateTempPassword();
 
   const { data: created, error: createErr } = await admin.auth.admin.createUser({
@@ -89,6 +111,7 @@ export async function inviteUserAction(
     id: created.user.id,
     tenant_id: inviter.tenant_id,
     email: parsed.data.email,
+    cpf,
     name: parsed.data.name,
     role: parsed.data.role,
   });

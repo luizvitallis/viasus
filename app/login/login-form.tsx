@@ -5,6 +5,7 @@ import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { CpfInput } from "@/components/shared/cpf-input";
 import { signInAction, type SignInState } from "./actions";
 
 export function LoginForm() {
@@ -16,18 +17,16 @@ export function LoginForm() {
   return (
     <form action={action} className="space-y-5" noValidate>
       <div className="space-y-2">
-        <Label htmlFor="email">Email institucional</Label>
-        <Input
-          id="email"
-          name="email"
-          type="email"
-          autoComplete="email"
+        <Label htmlFor="cpf">CPF</Label>
+        <CpfInput
+          id="cpf"
+          name="cpf"
+          autoComplete="username"
           required
-          placeholder="seu.nome@viasus.test"
-          aria-invalid={Boolean(state?.fieldErrors?.email)}
+          aria-invalid={Boolean(state?.fieldErrors?.cpf)}
         />
-        {state?.fieldErrors?.email && (
-          <p className="text-sm text-destructive">{state.fieldErrors.email[0]}</p>
+        {state?.fieldErrors?.cpf && (
+          <p className="text-sm text-destructive">{state.fieldErrors.cpf[0]}</p>
         )}
       </div>
 

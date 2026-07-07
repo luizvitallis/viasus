@@ -82,7 +82,7 @@ export default async function LoginPage() {
               Entrar
             </h2>
             <p className="text-stone-600 mb-8">
-              Use o email cadastrado pelo gestor da sua secretaria.
+              Use o CPF cadastrado pelo gestor da sua secretaria.
             </p>
 
             <LoginForm />
