@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ArrowUpRight, Plus } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
+import { ProtocolRowActions } from "./protocol-row-actions";
 import {
   PROTOCOL_TYPE_LABEL,
   PROTOCOL_STATUS_LABEL,
@@ -82,10 +83,14 @@ export default async function ProtocolosPage({ searchParams }: PageProps) {
       {protocols && protocols.length > 0 ? (
         <ol className="border-y-2 border-stone-900 divide-y-2 divide-stone-900">
           {protocols.map((p, i) => (
-            <li key={p.id}>
+            <li
+              key={p.id}
+              className="group hover:bg-stone-100 transition-colors"
+            >
+              <div className="flex items-center gap-3 -mx-6 px-6">
               <Link
                 href={`/admin/protocolos/${p.id}/editar`}
-                className="grid grid-cols-1 lg:grid-cols-12 gap-4 py-6 group hover:bg-stone-100 transition-colors -mx-6 px-6"
+                className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-4 py-6"
               >
                 <span className="lg:col-span-1 font-mono text-sm tracking-[0.14em] text-stone-500">
                   {String(i + 1).padStart(2, "0")}
@@ -116,6 +121,12 @@ export default async function ProtocolosPage({ searchParams }: PageProps) {
                   <ArrowUpRight className="size-5" />
                 </div>
               </Link>
+                <ProtocolRowActions
+                  protocolId={p.id}
+                  title={p.title}
+                  status={p.status}
+                />
+              </div>
             </li>
           ))}
         </ol>
