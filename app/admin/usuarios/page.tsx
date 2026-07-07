@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { formatCpf } from "@/lib/cpf";
 import { InviteForm } from "./invite-form";
+import { UserCpfEditor } from "./user-cpf-editor";
 
 export const metadata = {
   title: "Usuários — ViaSus",
@@ -80,14 +80,14 @@ export default async function UsuariosPage() {
               </span>
               <div className="lg:col-span-5">
                 <p className="font-medium text-stone-950">{p.name ?? "—"}</p>
-                <p className="text-sm text-stone-600 font-mono">
-                  {p.cpf ? formatCpf(p.cpf) : p.email}
-                </p>
-                {!p.cpf && (
-                  <p className="mt-1 inline-flex items-center px-1.5 py-0.5 border border-amber-600 bg-amber-50 font-mono text-[10px] uppercase tracking-[0.12em] text-amber-800">
-                    sem CPF — não loga
-                  </p>
-                )}
+                <p className="text-xs text-stone-500 font-mono">{p.email}</p>
+                <div className="mt-1.5">
+                  <UserCpfEditor
+                    userId={p.id}
+                    currentCpf={p.cpf}
+                    canEdit={canInvite}
+                  />
+                </div>
               </div>
               <div className="lg:col-span-3 flex items-start">
                 <span className="inline-flex items-center px-2.5 py-1 border-2 border-stone-900 font-mono text-[11px] uppercase tracking-[0.14em] text-stone-900 bg-stone-50">

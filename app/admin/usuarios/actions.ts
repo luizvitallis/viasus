@@ -132,3 +132,76 @@ export async function inviteUserAction(
     },
   };
 }
+
+// ----------------------------------------------------------------------------
+// updateUserCpf — gestor define/corrige o CPF de um usuário já existente
+// ----------------------------------------------------------------------------
+const UuidSchema = z
+  .string()
+  .regex(/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i);
+
+export interface UpdateCpfResult {
+  ok: boolean;
+  error?: string;
+}
+
+export async function updateUserCpfAction(
+  userId: string,
+  cpfRaw: string,
+): Promise<UpdateCpfResult> {
+  if (!UuidSchema.safeParse(userId).success) {
+    return { ok: false, error: "Usuário inválido." };
+  }
+  if (!isValidCpf(cpfRaw)) return { ok: false, error: "Informe um CPF válido." };
+  const cpf = normalizeCpf(cpfRaw);
+  if (!cpf) return { ok: false, error: "Informe um CPF válido." };
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { ok: false, error: "Sessão expirada." };
+
+  const { data: me } = await supabase
+    .from("profiles")
+    .select("tenant_id, role")
+    .eq("id", user.id)
+    .single();
+  if (!me) return { ok: false, error: "Perfil não encontrado." };
+  if (me.role !== "gestor" && me.role !== "admin") {
+    return { ok: false, error: "Apenas gestores podem alterar o CPF." };
+  }
+
+  const admin = createAdminClient();
+
+  // Alvo precisa ser do mesmo tenant.
+  const { data: target } = await admin
+    .from("profiles")
+    .select("id, tenant_id")
+    .eq("id", userId)
+    .single();
+  if (!target) return { ok: false, error: "Usuário não encontrado." };
+  if (target.tenant_id !== me.tenant_id) {
+    return { ok: false, error: "Cross-tenant negado." };
+  }
+
+  // CPF único global (ignorando o próprio usuário).
+  const { data: clash } = await admin
+    .from("profiles")
+    .select("id")
+    .eq("cpf", cpf)
+    .neq("id", userId)
+    .maybeSingle();
+  if (clash) {
+    return { ok: false, error: "Já existe um usuário com esse CPF." };
+  }
+
+  const { error } = await admin
+    .from("profiles")
+    .update({ cpf })
+    .eq("id", userId);
+  if (error) return { ok: false, error: `Erro ao salvar: ${error.message}` };
+
+  revalidatePath("/admin/usuarios");
+  return { ok: true };
+}
