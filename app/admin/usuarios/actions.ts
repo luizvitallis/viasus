@@ -176,7 +176,7 @@ const UpdateUserSchema = z.object({
   userId: UuidSchema,
   name: z.string().min(2, "Informe o nome completo."),
   email: z.string().email("Informe um email válido."),
-  role: z.enum(ASSIGNABLE_ROLES),
+  role: z.enum(ASSIGNABLE_ROLES, { error: "Papel inválido." }),
   cpf: z.string().refine((v) => isValidCpf(v), "Informe um CPF válido."),
 });
 
