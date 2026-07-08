@@ -172,12 +172,15 @@ export function UserRow({
           onSubmit={(e) => {
             e.preventDefault();
             const fd = new FormData(e.currentTarget);
+            // O select de papel fica desabilitado quando é o próprio usuário —
+            // e select desabilitado não vai no FormData. Mandamos o papel atual.
+            const role = isSelf ? user.role : String(fd.get("role") ?? "");
             run(() =>
               updateUserAction({
                 userId: user.id,
                 name: String(fd.get("name") ?? ""),
                 email: String(fd.get("email") ?? ""),
-                role: String(fd.get("role") ?? ""),
+                role,
                 cpf: String(fd.get("cpf") ?? ""),
               }),
             );
