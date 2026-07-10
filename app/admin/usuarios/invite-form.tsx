@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useState } from "react";
+import { useRouter } from "next/navigation";
 import { Loader2, Copy, Check, Dices } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,6 +18,25 @@ function generatePassword() {
 }
 
 export function InviteForm() {
+  const router = useRouter();
+  // Remontar via key zera o useActionState (volta pro form limpo) sem reload.
+  const [instance, setInstance] = useState(0);
+  return (
+    <InviteFormInner
+      key={instance}
+      onCadastrarOutro={() => {
+        router.refresh();
+        setInstance((i) => i + 1);
+      }}
+    />
+  );
+}
+
+function InviteFormInner({
+  onCadastrarOutro,
+}: {
+  onCadastrarOutro: () => void;
+}) {
   const [state, action, pending] = useActionState<InviteState | undefined, FormData>(
     inviteUserAction,
     undefined,
@@ -72,9 +92,8 @@ export function InviteForm() {
 
         <Button
           type="button"
-          variant="ghost"
-          className="rounded-none"
-          onClick={() => window.location.reload()}
+          className="rounded-none bg-emerald-800 hover:bg-emerald-900 text-stone-50 px-6"
+          onClick={onCadastrarOutro}
         >
           Cadastrar outro usuário
         </Button>
