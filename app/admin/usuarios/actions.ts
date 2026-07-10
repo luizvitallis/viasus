@@ -12,7 +12,7 @@ const InviteSchema = z.object({
   name: z.string().min(2, "Informe o nome completo."),
   email: z.string().email("Informe um email válido."),
   cpf: z.string().refine((v) => isValidCpf(v), "Informe um CPF válido."),
-  password: z.string().min(8, "A senha precisa de pelo menos 8 caracteres."),
+  password: z.string().min(6, "A senha precisa de pelo menos 6 caracteres."),
   role: z.enum(ROLES_INVITABLE),
 });
 
