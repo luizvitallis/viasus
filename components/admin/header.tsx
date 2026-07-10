@@ -97,14 +97,18 @@ export function AdminHeader({
 
           <div className="flex items-center gap-4">
             <SearchModal />
-            <div className="hidden sm:block text-right">
-              <p className="text-sm font-medium text-stone-900 leading-tight">
+            <Link
+              href="/admin/conta"
+              className="hidden sm:block text-right group"
+              title="Minha conta"
+            >
+              <p className="text-sm font-medium text-stone-900 leading-tight group-hover:text-emerald-800 transition-colors">
                 {userName}
               </p>
               <p className="text-xs text-stone-500 font-mono uppercase tracking-[0.14em]">
-                {roleLabel[userRole] ?? userRole}
+                {roleLabel[userRole] ?? userRole} · minha conta
               </p>
-            </div>
+            </Link>
             <form action={signOutAction}>
               <Button
                 type="submit"
