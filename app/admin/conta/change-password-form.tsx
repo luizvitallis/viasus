@@ -54,7 +54,7 @@ export function ChangePasswordForm() {
           type="password"
           autoComplete="new-password"
           required
-          placeholder="Pelo menos 8 caracteres"
+          placeholder="Pelo menos 6 caracteres"
           aria-invalid={Boolean(state?.fieldErrors?.password)}
         />
         {state?.fieldErrors?.password && (

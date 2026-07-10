@@ -8,7 +8,7 @@ const ChangePasswordSchema = z
     current: z.string().min(1, "Informe a senha atual."),
     password: z
       .string()
-      .min(8, "A nova senha precisa de pelo menos 8 caracteres."),
+      .min(6, "A nova senha precisa de pelo menos 6 caracteres."),
     confirm: z.string().min(1, "Confirme a nova senha."),
   })
   .refine((d) => d.password === d.confirm, {

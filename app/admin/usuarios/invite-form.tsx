@@ -147,7 +147,7 @@ export function InviteForm() {
             required
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            placeholder="Defina a senha (mín. 8 caracteres)"
+            placeholder="Defina a senha (mín. 6 caracteres)"
             autoComplete="off"
             aria-invalid={Boolean(state?.fieldErrors?.password)}
           />
