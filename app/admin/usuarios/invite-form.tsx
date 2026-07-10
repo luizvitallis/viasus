@@ -1,18 +1,27 @@
 "use client";
 
 import { useActionState, useState } from "react";
-import { Loader2, Copy, Check } from "lucide-react";
+import { Loader2, Copy, Check, Dices } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { CpfInput } from "@/components/shared/cpf-input";
 import { inviteUserAction, type InviteState } from "./actions";
 
+function generatePassword() {
+  // 12 caracteres legíveis (sem ambíguos tipo O/0, l/1), forte o suficiente.
+  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789";
+  const bytes = new Uint32Array(12);
+  crypto.getRandomValues(bytes);
+  return Array.from(bytes, (b) => chars[b % chars.length]).join("");
+}
+
 export function InviteForm() {
   const [state, action, pending] = useActionState<InviteState | undefined, FormData>(
     inviteUserAction,
     undefined,
   );
+  const [password, setPassword] = useState("");
   const [copied, setCopied] = useState(false);
 
   if (state?.success) {
@@ -23,27 +32,27 @@ export function InviteForm() {
           className="border-l-2 border-emerald-800 bg-emerald-50 px-4 py-4"
         >
           <p className="font-medium text-emerald-950">
-            Editor cadastrado: {state.success.name}
+            Usuário cadastrado: {state.success.name}
           </p>
           <p className="mt-1 text-sm text-emerald-900">
-            Compartilhe com {state.success.email} a senha temporária abaixo via
-            canal seguro (não envie por chat público). Ele pode trocá-la depois
-            de logar.
+            Ele entra com o <strong>CPF</strong> e a senha abaixo. Compartilhe por
+            canal seguro (não por chat público). Ele pode trocá-la depois em
+            “Minha conta”.
           </p>
         </div>
 
         <div className="space-y-2">
-          <Label className="text-stone-700">Senha temporária</Label>
+          <Label className="text-stone-700">Senha definida</Label>
           <div className="flex gap-2">
             <code className="flex-1 px-4 py-3 border-2 border-stone-900 bg-stone-100 font-mono text-base text-stone-950 select-all">
-              {state.success.tempPassword}
+              {state.success.password}
             </code>
             <Button
               type="button"
               variant="outline"
               className="rounded-none border-2 border-stone-900 hover:bg-stone-900 hover:text-stone-50 h-auto"
               onClick={() => {
-                navigator.clipboard.writeText(state.success!.tempPassword);
+                navigator.clipboard.writeText(state.success!.password);
                 setCopied(true);
                 setTimeout(() => setCopied(false), 2000);
               }}
@@ -59,9 +68,6 @@ export function InviteForm() {
               )}
             </Button>
           </div>
-          <p className="text-xs text-stone-500 font-mono uppercase tracking-[0.14em]">
-            Esta senha não será mostrada novamente.
-          </p>
         </div>
 
         <Button
@@ -70,7 +76,7 @@ export function InviteForm() {
           className="rounded-none"
           onClick={() => window.location.reload()}
         >
-          Convidar outro editor
+          Cadastrar outro usuário
         </Button>
       </div>
     );
@@ -123,11 +129,46 @@ export function InviteForm() {
           aria-invalid={Boolean(state?.fieldErrors?.cpf)}
         />
         <p className="text-xs text-stone-500">
-          É por ele que o editor vai entrar no sistema. O email fica só para
+          É por ele que o usuário vai entrar no sistema. O email fica só para
           recuperar a senha.
         </p>
         {state?.fieldErrors?.cpf && (
           <p className="text-sm text-destructive">{state.fieldErrors.cpf[0]}</p>
+        )}
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="password">Senha inicial</Label>
+        <div className="flex gap-2">
+          <Input
+            id="password"
+            name="password"
+            type="text"
+            required
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder="Defina a senha (mín. 8 caracteres)"
+            autoComplete="off"
+            aria-invalid={Boolean(state?.fieldErrors?.password)}
+          />
+          <Button
+            type="button"
+            variant="outline"
+            className="rounded-none border-2 border-stone-300 hover:border-stone-900 h-auto shrink-0"
+            onClick={() => setPassword(generatePassword())}
+            title="Gerar uma senha forte"
+          >
+            <Dices className="size-4" />
+            <span className="hidden sm:inline">Gerar</span>
+          </Button>
+        </div>
+        <p className="text-xs text-stone-500">
+          Você define a senha; o usuário pode trocá-la depois em “Minha conta”.
+        </p>
+        {state?.fieldErrors?.password && (
+          <p className="text-sm text-destructive">
+            {state.fieldErrors.password[0]}
+          </p>
         )}
       </div>
 
@@ -170,7 +211,7 @@ export function InviteForm() {
             Cadastrando…
           </>
         ) : (
-          "Cadastrar editor"
+          "Cadastrar usuário"
         )}
       </Button>
     </form>

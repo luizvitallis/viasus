@@ -2,7 +2,6 @@
 
 import { z } from "zod";
 import { revalidatePath } from "next/cache";
-import { randomBytes } from "node:crypto";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { isValidCpf, normalizeCpf } from "@/lib/cpf";
@@ -13,6 +12,7 @@ const InviteSchema = z.object({
   name: z.string().min(2, "Informe o nome completo."),
   email: z.string().email("Informe um email válido."),
   cpf: z.string().refine((v) => isValidCpf(v), "Informe um CPF válido."),
+  password: z.string().min(8, "A senha precisa de pelo menos 8 caracteres."),
   role: z.enum(ROLES_INVITABLE),
 });
 
@@ -22,18 +22,14 @@ export interface InviteState {
     name?: string[];
     email?: string[];
     cpf?: string[];
+    password?: string[];
     role?: string[];
   };
   success?: {
     email: string;
     name: string;
-    tempPassword: string;
+    password: string;
   };
-}
-
-function generateTempPassword() {
-  // 12 chars base64url-ish, robusto e copiável
-  return randomBytes(9).toString("base64").replace(/[+/=]/g, "").slice(0, 12);
 }
 
 export async function inviteUserAction(
@@ -44,6 +40,7 @@ export async function inviteUserAction(
     name: formData.get("name"),
     email: formData.get("email"),
     cpf: formData.get("cpf"),
+    password: formData.get("password"),
     role: formData.get("role"),
   });
 
@@ -87,11 +84,9 @@ export async function inviteUserAction(
     return { fieldErrors: { cpf: ["Já existe um usuário com esse CPF."] } };
   }
 
-  const tempPassword = generateTempPassword();
-
   const { data: created, error: createErr } = await admin.auth.admin.createUser({
     email: parsed.data.email,
-    password: tempPassword,
+    password: parsed.data.password,
     email_confirm: true,
     user_metadata: { name: parsed.data.name, invited_by: user.id },
   });
@@ -128,7 +123,7 @@ export async function inviteUserAction(
     success: {
       email: parsed.data.email,
       name: parsed.data.name,
-      tempPassword,
+      password: parsed.data.password,
     },
   };
 }
