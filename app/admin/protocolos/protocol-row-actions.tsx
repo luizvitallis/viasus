@@ -112,18 +112,13 @@ export function ProtocolRowActions({
       {editing && (
         <div
           className="fixed inset-0 z-50 bg-stone-900/60 flex items-center justify-center p-4"
-          onClick={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
+          onClick={() => {
             if (!pending) setEditing(false);
           }}
         >
           <div
             className="bg-white border-2 border-stone-900 max-w-lg w-full"
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-            }}
+            onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between border-b-2 border-stone-900 px-5 py-3">
               <p className="font-mono text-xs uppercase tracking-[0.18em] text-stone-700">
