@@ -146,19 +146,27 @@ export function ProtocolRowActions({
                 const fd = new FormData(e.currentTarget);
                 setError(null);
                 startTransition(async () => {
-                  const res = await updateProtocolInfoAction({
-                    protocolId,
-                    title: String(fd.get("title") ?? ""),
-                    type: String(fd.get("type") ?? ""),
-                    specialty: String(fd.get("specialty") ?? "") || null,
-                    summary: String(fd.get("summary") ?? "") || null,
-                  });
-                  if (!res.ok) {
-                    setError(res.error ?? "Erro ao salvar.");
-                    return;
+                  try {
+                    const res = await updateProtocolInfoAction({
+                      protocolId,
+                      title: String(fd.get("title") ?? ""),
+                      type: String(fd.get("type") ?? ""),
+                      specialty: String(fd.get("specialty") ?? "") || null,
+                      summary: String(fd.get("summary") ?? "") || null,
+                    });
+                    if (!res.ok) {
+                      setError(res.error ?? "Erro ao salvar.");
+                      return;
+                    }
+                    setEditing(false);
+                    router.refresh();
+                  } catch (err) {
+                    setError(
+                      err instanceof Error
+                        ? `Falha: ${err.message}`
+                        : "Falha inesperada ao salvar.",
+                    );
                   }
-                  setEditing(false);
-                  router.refresh();
                 });
               }}
               className="p-5 space-y-4"
