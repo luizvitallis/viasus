@@ -88,6 +88,7 @@ export const NODE_TYPES: NodeType[] = [
   "encaminhamento",
   "calculadora",
   "documento" as NodeType,
+  "profissional" as NodeType,
 ];
 
 export type DocumentoCategoria =
@@ -128,6 +129,7 @@ export const NODE_TYPE_LABEL: Record<string, string> = {
   encaminhamento: "Encaminhamento",
   calculadora: "Calculadora",
   documento: "Documento",
+  profissional: "Profissional",
 };
 
 export const PROTOCOL_TYPE_LABEL: Record<ProtocolType, string> = {

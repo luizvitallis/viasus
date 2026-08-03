@@ -9,6 +9,7 @@ import {
   Sigma,
   Sparkles,
   FileText,
+  Stethoscope,
 } from "lucide-react";
 import type { NodeType } from "@/types/domain";
 import { NODE_TYPE_LABEL } from "@/types/domain";
@@ -31,6 +32,7 @@ const NODE_BUTTONS: {
   { type: "encaminhamento", icon: Send },
   { type: "calculadora", icon: Sigma },
   { type: "documento" as NodeType, icon: FileText },
+  { type: "profissional" as NodeType, icon: Stethoscope },
 ];
 
 export function EditorToolbar({ onAddNode, onAutoLayout }: EditorToolbarProps) {
