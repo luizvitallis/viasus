@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { logAudit } from "@/lib/audit";
 
 const ProtocolIdSchema = z
@@ -358,7 +359,12 @@ export async function updateProtocolInfoAction(
     return { ok: false, error: "Seu papel não permite editar protocolos." };
   }
 
-  const { data: p } = await supabase
+  // Escrita via admin client (com as checagens de papel/tenant acima como
+  // guarda), igual ao fluxo de gestão de usuários. Evita bloqueio silencioso
+  // de RLS e permite confirmar as linhas afetadas.
+  const admin = createAdminClient();
+
+  const { data: p } = await admin
     .from("protocols")
     .select("id, tenant_id")
     .eq("id", parsed.data.protocolId)
@@ -371,7 +377,7 @@ export async function updateProtocolInfoAction(
   const specialty = parsed.data.specialty?.length ? parsed.data.specialty : null;
   const summary = parsed.data.summary?.length ? parsed.data.summary : null;
 
-  const { error } = await supabase
+  const { data: updated, error } = await admin
     .from("protocols")
     .update({
       title: parsed.data.title,
@@ -379,8 +385,11 @@ export async function updateProtocolInfoAction(
       specialty,
       summary,
     })
-    .eq("id", parsed.data.protocolId);
+    .eq("id", parsed.data.protocolId)
+    .select("id")
+    .maybeSingle();
   if (error) return { ok: false, error: `Erro ao salvar: ${error.message}` };
+  if (!updated) return { ok: false, error: "Nada foi atualizado." };
 
   await logAudit({
     supabase,
