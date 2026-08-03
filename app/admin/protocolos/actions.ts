@@ -124,3 +124,180 @@ export async function deleteProtocolAction(
   revalidatePath("/admin/protocolos");
   return { ok: true, mode: "deleted" };
 }
+
+// ----------------------------------------------------------------------------
+// duplicateProtocolAction — copia um protocolo inteiro (grafo + conteúdo) como
+// novo rascunho, pra criar outro parecido só editando (ex.: trocar o título).
+// Não copia anexos (arquivos no Storage) — só o fluxograma/conteúdo.
+// ----------------------------------------------------------------------------
+function slugify(text: string) {
+  return text
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 80);
+}
+
+export interface DuplicateProtocolResult {
+  ok: boolean;
+  error?: string;
+  newId?: string;
+}
+
+export async function duplicateProtocolAction(
+  protocolId: string,
+): Promise<DuplicateProtocolResult> {
+  const parsed = ProtocolIdSchema.safeParse(protocolId);
+  if (!parsed.success) return { ok: false, error: "ID inválido." };
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { ok: false, error: "Não autenticado." };
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("tenant_id, role")
+    .eq("id", user.id)
+    .single();
+  if (!profile) return { ok: false, error: "Perfil não encontrado." };
+  if (!["curador", "publicador", "gestor", "admin"].includes(profile.role)) {
+    return { ok: false, error: "Seu papel não permite duplicar protocolos." };
+  }
+
+  const { data: src } = await supabase
+    .from("protocols")
+    .select("id, tenant_id, type, title, specialty, summary, tags, referral_data")
+    .eq("id", protocolId)
+    .single();
+  if (!src) return { ok: false, error: "Protocolo não encontrado." };
+  if (src.tenant_id !== profile.tenant_id) {
+    return { ok: false, error: "Cross-tenant negado." };
+  }
+
+  // Slug único no tenant, sufixo -copia (-copia-2, -3…).
+  const baseSlug = slugify(src.title) || "protocolo";
+  let slug = `${baseSlug}-copia`;
+  let suffix = 2;
+  while (true) {
+    const { data: clash } = await supabase
+      .from("protocols")
+      .select("id")
+      .eq("tenant_id", profile.tenant_id)
+      .eq("slug", slug)
+      .maybeSingle();
+    if (!clash) break;
+    slug = `${baseSlug}-copia-${suffix}`;
+    suffix += 1;
+  }
+
+  const { data: created, error: insErr } = await supabase
+    .from("protocols")
+    .insert({
+      tenant_id: profile.tenant_id,
+      type: src.type,
+      title: `${src.title} (cópia)`,
+      slug,
+      specialty: src.specialty,
+      summary: src.summary,
+      tags: src.tags as never,
+      referral_data: (src as { referral_data?: unknown }).referral_data as never,
+      status: "draft",
+      owner_curator_id: user.id,
+      created_by: user.id,
+    })
+    .select("id")
+    .single();
+  if (insErr || !created) {
+    return { ok: false, error: insErr?.message ?? "Erro ao duplicar." };
+  }
+
+  // Copiar nós — novos IDs, mantendo o mapa antigo→novo pras arestas.
+  const { data: nodes } = await supabase
+    .from("nodes")
+    .select(
+      "id, type, label, position_x, position_y, content, tags, calculator_type, links_to_protocol_id, encaminhamento_target_id, documento_categoria, documento_acao, documento_link, color_bg, color_border, links",
+    )
+    .eq("protocol_id", protocolId);
+
+  const idMap = new Map<string, string>();
+  if (nodes && nodes.length) {
+    const nodeRows = nodes.map((n) => {
+      const newId = crypto.randomUUID();
+      idMap.set(n.id, newId);
+      const x = n as Record<string, unknown>;
+      return {
+        id: newId,
+        protocol_id: created.id,
+        tenant_id: profile.tenant_id,
+        type: n.type,
+        label: n.label,
+        position_x: n.position_x,
+        position_y: n.position_y,
+        content: (n.content ?? {}) as never,
+        tags: (n.tags ?? []) as never,
+        calculator_type: n.calculator_type ?? null,
+        links_to_protocol_id: n.links_to_protocol_id ?? null,
+        encaminhamento_target_id: n.encaminhamento_target_id ?? null,
+        documento_categoria: (x.documento_categoria as string | null) ?? null,
+        documento_acao: (x.documento_acao as string | null) ?? null,
+        documento_link: (x.documento_link as string | null) ?? null,
+        color_bg: (x.color_bg as string | null) ?? null,
+        color_border: (x.color_border as string | null) ?? null,
+        links: ((x.links as unknown) ?? []) as never,
+      };
+    });
+    const { error: nodesErr } = await supabase.from("nodes").insert(nodeRows);
+    if (nodesErr) {
+      await supabase.from("protocols").delete().eq("id", created.id);
+      return { ok: false, error: `Erro copiando nós: ${nodesErr.message}` };
+    }
+  }
+
+  // Copiar arestas — remapeando source/target pros novos IDs de nó.
+  const { data: edges } = await supabase
+    .from("edges")
+    .select("source_node_id, target_node_id, label, style, condition_expr, color_stroke")
+    .eq("protocol_id", protocolId);
+
+  if (edges && edges.length) {
+    const edgeRows = edges.flatMap((e) => {
+      const s = idMap.get(e.source_node_id);
+      const t = idMap.get(e.target_node_id);
+      if (!s || !t) return [];
+      const x = e as Record<string, unknown>;
+      return [
+        {
+          protocol_id: created.id,
+          tenant_id: profile.tenant_id,
+          source_node_id: s,
+          target_node_id: t,
+          label: e.label ?? null,
+          style: e.style,
+          condition_expr: ((x.condition_expr as unknown) ?? null) as never,
+          color_stroke: (x.color_stroke as string | null) ?? null,
+        },
+      ];
+    });
+    if (edgeRows.length) {
+      const { error: edgesErr } = await supabase.from("edges").insert(edgeRows);
+      if (edgesErr) {
+        await supabase.from("protocols").delete().eq("id", created.id);
+        return { ok: false, error: `Erro copiando conexões: ${edgesErr.message}` };
+      }
+    }
+  }
+
+  await logAudit({
+    supabase,
+    action: "fork",
+    protocolId: created.id,
+    payload: { source_protocol_id: protocolId, title: `${src.title} (cópia)` },
+  });
+
+  revalidatePath("/admin/protocolos");
+  return { ok: true, newId: created.id };
+}
