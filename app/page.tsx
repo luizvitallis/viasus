@@ -61,7 +61,6 @@ export default function Home() {
             <HeartPulse className="size-3.5 text-white" />
             Secretaria Municipal de Saúde · Caucaia / CE · Atenção Especializada
           </span>
-          <span className="hidden sm:inline text-white/75">v1.0 · piloto</span>
         </div>
       </header>
 
@@ -81,8 +80,8 @@ export default function Home() {
               ViaSus
             </h1>
 
-            <div className="mt-10 grid grid-cols-1 lg:grid-cols-12 gap-10">
-              <div className="lg:col-span-7">
+            <div className="mt-10">
+              <div className="max-w-2xl">
                 <p className="font-serif text-2xl sm:text-3xl leading-[1.25] text-stone-900">
                   Protocolos clínicos do SUS, navegáveis.
                 </p>
@@ -109,30 +108,6 @@ export default function Home() {
                   </Link>
                 </div>
               </div>
-
-              <aside className="lg:col-span-5 lg:border-l-2 lg:border-stone-900 lg:pl-10 flex flex-col justify-end">
-                <dl className="font-mono text-[13px] text-stone-700 space-y-3 bg-white/60 backdrop-blur-[2px] border border-stone-200 p-4">
-                  <div className="flex justify-between border-b border-stone-300 pb-2">
-                    <dt className="uppercase tracking-[0.14em] text-stone-500">Tenant</dt>
-                    <dd className="flex items-center gap-1.5">
-                      <span className="size-2 bg-[var(--color-caucaia-red)] rounded-full" />
-                      Caucaia / CE
-                    </dd>
-                  </div>
-                  <div className="flex justify-between border-b border-stone-300 pb-2">
-                    <dt className="uppercase tracking-[0.14em] text-stone-500">Domínio</dt>
-                    <dd>Atenção Especializada</dd>
-                  </div>
-                  <div className="flex justify-between border-b border-stone-300 pb-2">
-                    <dt className="uppercase tracking-[0.14em] text-stone-500">Estágio</dt>
-                    <dd>V1 · em piloto</dd>
-                  </div>
-                  <div className="flex justify-between">
-                    <dt className="uppercase tracking-[0.14em] text-stone-500">Stack</dt>
-                    <dd>Next.js · Supabase · Postgres</dd>
-                  </div>
-                </dl>
-              </aside>
             </div>
           </div>
         </section>
