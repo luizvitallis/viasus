@@ -28,7 +28,7 @@ export default async function ProtocolosPage({ searchParams }: PageProps) {
 
   let query = supabase
     .from("protocols")
-    .select("id, title, slug, type, specialty, status, updated_at")
+    .select("id, title, slug, type, specialty, summary, status, updated_at")
     .order("updated_at", { ascending: false });
 
   if (status === "draft" || status === "published" || status === "archived") {
@@ -125,6 +125,9 @@ export default async function ProtocolosPage({ searchParams }: PageProps) {
                   protocolId={p.id}
                   title={p.title}
                   status={p.status}
+                  type={p.type}
+                  specialty={p.specialty}
+                  summary={p.summary}
                 />
               </div>
             </li>

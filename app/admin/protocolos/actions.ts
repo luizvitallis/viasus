@@ -301,3 +301,94 @@ export async function duplicateProtocolAction(
   revalidatePath("/admin/protocolos");
   return { ok: true, newId: created.id };
 }
+
+// ----------------------------------------------------------------------------
+// updateProtocolInfoAction — editar cabeçalho (título/tipo/especialidade/resumo)
+// de um protocolo já criado. O slug NÃO muda (mantém a URL pública estável).
+// ----------------------------------------------------------------------------
+const PROTOCOL_TYPES_INFO = [
+  "linha_cuidado",
+  "pcdt",
+  "encaminhamento",
+  "pop",
+  "diretriz",
+] as const;
+
+const UpdateInfoSchema = z.object({
+  protocolId: ProtocolIdSchema,
+  title: z.string().min(3, "Título precisa de pelo menos 3 caracteres."),
+  type: z.enum(PROTOCOL_TYPES_INFO, { error: "Tipo inválido." }),
+  specialty: z.string().trim().nullable().optional(),
+  summary: z.string().trim().nullable().optional(),
+});
+
+export interface UpdateInfoPayload {
+  protocolId: string;
+  title: string;
+  type: string;
+  specialty: string | null;
+  summary: string | null;
+}
+
+export async function updateProtocolInfoAction(
+  payload: UpdateInfoPayload,
+): Promise<{ ok: boolean; error?: string }> {
+  const parsed = UpdateInfoSchema.safeParse(payload);
+  if (!parsed.success) {
+    const fe = parsed.error.flatten().fieldErrors;
+    return {
+      ok: false,
+      error: fe.title?.[0] ?? fe.type?.[0] ?? "Confira os campos.",
+    };
+  }
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { ok: false, error: "Não autenticado." };
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("tenant_id, role")
+    .eq("id", user.id)
+    .single();
+  if (!profile) return { ok: false, error: "Perfil não encontrado." };
+  if (!["curador", "publicador", "gestor", "admin"].includes(profile.role)) {
+    return { ok: false, error: "Seu papel não permite editar protocolos." };
+  }
+
+  const { data: p } = await supabase
+    .from("protocols")
+    .select("id, tenant_id")
+    .eq("id", parsed.data.protocolId)
+    .single();
+  if (!p) return { ok: false, error: "Protocolo não encontrado." };
+  if (p.tenant_id !== profile.tenant_id) {
+    return { ok: false, error: "Cross-tenant negado." };
+  }
+
+  const specialty = parsed.data.specialty?.length ? parsed.data.specialty : null;
+  const summary = parsed.data.summary?.length ? parsed.data.summary : null;
+
+  const { error } = await supabase
+    .from("protocols")
+    .update({
+      title: parsed.data.title,
+      type: parsed.data.type,
+      specialty,
+      summary,
+    })
+    .eq("id", parsed.data.protocolId);
+  if (error) return { ok: false, error: `Erro ao salvar: ${error.message}` };
+
+  await logAudit({
+    supabase,
+    action: "update",
+    protocolId: parsed.data.protocolId,
+    payload: { title: parsed.data.title, type: parsed.data.type },
+  });
+
+  revalidatePath("/admin/protocolos");
+  return { ok: true };
+}
