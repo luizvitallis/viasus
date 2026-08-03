@@ -366,12 +366,24 @@ export async function updateProtocolInfoAction(
 
   const { data: p } = await admin
     .from("protocols")
-    .select("id, tenant_id")
+    .select("id, tenant_id, type")
     .eq("id", parsed.data.protocolId)
     .single();
   if (!p) return { ok: false, error: "Protocolo não encontrado." };
   if (p.tenant_id !== profile.tenant_id) {
     return { ok: false, error: "Cross-tenant negado." };
+  }
+
+  // Não permitir cruzar a fronteira Encaminhamento (checklist) ↔ fluxograma:
+  // são estruturas de conteúdo diferentes e a troca "esconde" o conteúdo atual.
+  const wasReferral = p.type === "encaminhamento";
+  const willBeReferral = parsed.data.type === "encaminhamento";
+  if (wasReferral !== willBeReferral) {
+    return {
+      ok: false,
+      error:
+        "Não dá pra trocar entre Encaminhamento e os tipos de fluxograma — o conteúdo é montado de formas diferentes. Se precisar, crie um novo protocolo.",
+    };
   }
 
   const specialty = parsed.data.specialty?.length ? parsed.data.specialty : null;

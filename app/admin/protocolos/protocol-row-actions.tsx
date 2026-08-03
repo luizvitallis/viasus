@@ -34,6 +34,13 @@ export function ProtocolRowActions({
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
 
+  // Encaminhamento (checklist) e os tipos de fluxograma não são intercambiáveis
+  // — trocar entre eles esconde o conteúdo. Só ofereça os tipos compatíveis.
+  const isReferral = type === "encaminhamento";
+  const typeOptions = TYPE_OPTIONS.filter(([v]) =>
+    isReferral ? v === "encaminhamento" : v !== "encaminhamento",
+  );
+
   const willArchive = status !== "draft";
   const confirmMsg = willArchive
     ? `Arquivar "${title}"?\n\nEle sai das listas (pública e do acervo ativo), mas o histórico é preservado e dá pra restaurar depois.`
@@ -145,7 +152,9 @@ export function ProtocolRowActions({
                     const res = await updateProtocolInfoAction({
                       protocolId,
                       title: String(fd.get("title") ?? ""),
-                      type: String(fd.get("type") ?? ""),
+                      // Select desabilitado (encaminhamento) não vai no FormData;
+                      // mandamos o tipo atual.
+                      type: isReferral ? type : String(fd.get("type") ?? ""),
                       specialty: String(fd.get("specialty") ?? "") || null,
                       summary: String(fd.get("summary") ?? "") || null,
                     });
@@ -194,9 +203,10 @@ export function ProtocolRowActions({
                     id={`type-${protocolId}`}
                     name="type"
                     defaultValue={type}
-                    className="flex h-10 w-full border-2 border-stone-300 bg-transparent px-3 py-1 text-base focus-visible:border-emerald-800 focus-visible:outline-none"
+                    disabled={isReferral}
+                    className="flex h-10 w-full border-2 border-stone-300 bg-transparent px-3 py-1 text-base focus-visible:border-emerald-800 focus-visible:outline-none disabled:opacity-60"
                   >
-                    {TYPE_OPTIONS.map(([value, label]) => (
+                    {typeOptions.map(([value, label]) => (
                       <option key={value} value={value}>
                         {label}
                       </option>
@@ -238,8 +248,9 @@ export function ProtocolRowActions({
               </div>
 
               <p className="text-xs text-stone-500">
-                Mudar o tipo pode trocar o editor (fluxograma ↔ checklist de
-                Encaminhamento). O endereço público (slug) não muda.
+                {isReferral
+                  ? "O tipo Encaminhamento é fixo (o conteúdo é um checklist). O endereço público (slug) não muda."
+                  : "Você pode alternar entre os tipos de fluxograma. O endereço público (slug) não muda."}
               </p>
 
               {error && <p className="text-sm text-destructive">{error}</p>}
