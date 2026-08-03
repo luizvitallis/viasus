@@ -12,6 +12,7 @@ const NODE_TYPES = [
   "encaminhamento",
   "calculadora",
   "documento",
+  "profissional",
 ] as const;
 
 const EDGE_STYLES = ["normal", "urgente", "condicional"] as const;
