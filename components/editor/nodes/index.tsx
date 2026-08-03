@@ -7,6 +7,7 @@ import {
   FileText,
   Download,
   AlertTriangle,
+  Stethoscope,
 } from "lucide-react";
 import type {
   DocumentoAcao,
@@ -285,9 +286,37 @@ function DocumentoNode({ data, selected }: ViaNodeProps) {
   );
 }
 
+// ---------- 8. profissional (nó simples rotulado, azul + estetoscópio) ----------
+function ProfissionalNode({ data, selected }: ViaNodeProps) {
+  return (
+    <div
+      className={`${widthCls} px-4 py-3 bg-blue-50 border-2 border-[var(--color-clinical-blue,#1d4ed8)] ${selected ? "ring-2 ring-emerald-700 ring-offset-2 ring-offset-stone-50" : ""}`}
+      style={customColorStyle(data)}
+    >
+      <Handle type="target" position={Position.Top} className={handleStyle} />
+      <div className="flex items-start gap-2">
+        <Stethoscope
+          className="size-4 text-[var(--color-clinical-blue,#1d4ed8)] mt-0.5 shrink-0"
+          strokeWidth={2.25}
+        />
+        <div className="min-w-0">
+          <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-[var(--color-clinical-blue,#1d4ed8)] mb-1">
+            Profissional
+          </p>
+          <p className="font-medium text-stone-950 leading-tight text-sm">
+            {data.label || "Sem rótulo"}
+          </p>
+        </div>
+      </div>
+      <Handle type="source" position={Position.Bottom} className={handleStyle} />
+    </div>
+  );
+}
+
 // NOTE: Record<string, ...> em vez de Record<NodeType, ...> porque o enum
-// node_type só passa a incluir 'documento' depois que a migration 0007 for
-// aplicada e os tipos forem regenerados. xyflow aceita Record<string, ...>.
+// node_type só passa a incluir 'documento'/'profissional' depois que as
+// migrations 0007/0014 forem aplicadas e os tipos regenerados. xyflow aceita
+// Record<string, ...>.
 export const viaNodeTypes: Record<string, React.ComponentType<ViaNodeProps>> = {
   ponto_atencao: PontoAtencaoNode,
   decisao: DecisaoNode,
@@ -296,4 +325,5 @@ export const viaNodeTypes: Record<string, React.ComponentType<ViaNodeProps>> = {
   encaminhamento: EncaminhamentoNode,
   calculadora: CalculadoraNode,
   documento: DocumentoNode,
+  profissional: ProfissionalNode,
 };
