@@ -15,11 +15,31 @@ interface PageProps {
   searchParams: Promise<{ status?: string }>;
 }
 
+interface AcervoProtocol {
+  id: string;
+  title: string;
+  slug: string;
+  type: string;
+  specialty: string | null;
+  summary: string | null;
+  status: string;
+  updated_at: string;
+}
+
 const STATUS_FILTERS = [
   { key: undefined, label: "Todos" },
   { key: "draft" as const, label: "Rascunhos" },
   { key: "published" as const, label: "Publicados" },
   { key: "archived" as const, label: "Arquivados" },
+];
+
+// Ordem e rótulos das categorias (seções) do acervo.
+const TYPE_ORDER: { type: string; label: string }[] = [
+  { type: "linha_cuidado", label: "Linhas de Cuidado" },
+  { type: "pcdt", label: "PCDTs" },
+  { type: "encaminhamento", label: "Encaminhamentos" },
+  { type: "pop", label: "Administrativos" },
+  { type: "diretriz", label: "Diretrizes" },
 ];
 
 export default async function ProtocolosPage({ searchParams }: PageProps) {
@@ -28,14 +48,29 @@ export default async function ProtocolosPage({ searchParams }: PageProps) {
 
   let query = supabase
     .from("protocols")
-    .select("id, title, slug, type, specialty, summary, status, updated_at")
-    .order("updated_at", { ascending: false });
+    .select("id, title, slug, type, specialty, summary, status, updated_at");
 
   if (status === "draft" || status === "published" || status === "archived") {
     query = query.eq("status", status);
   }
 
-  const { data: protocols } = await query;
+  const { data } = await query;
+  const protocols = (data ?? []) as AcervoProtocol[];
+
+  // Agrupa por categoria; dentro de cada uma, ordena alfabeticamente (pt-BR).
+  const grouped: Record<string, AcervoProtocol[]> = {};
+  for (const p of protocols) {
+    (grouped[p.type] ??= []).push(p);
+  }
+  for (const key of Object.keys(grouped)) {
+    grouped[key].sort((a, b) =>
+      a.title.localeCompare(b.title, "pt-BR", { sensitivity: "base" }),
+    );
+  }
+
+  const sections = TYPE_ORDER.filter(
+    ({ type }) => (grouped[type]?.length ?? 0) > 0,
+  );
 
   return (
     <div className="mx-auto max-w-7xl px-6 py-12">
@@ -58,8 +93,8 @@ export default async function ProtocolosPage({ searchParams }: PageProps) {
         </Link>
       </div>
 
-      {/* Filtros */}
-      <div className="flex flex-wrap gap-2 border-b-2 border-stone-900 pb-3 mb-6">
+      {/* Filtros de status */}
+      <div className="flex flex-wrap gap-2 border-b-2 border-stone-900 pb-3 mb-10">
         {STATUS_FILTERS.map((f) => {
           const active = (f.key ?? "") === (status ?? "");
           const href = f.key ? `?status=${f.key}` : "/admin/protocolos";
@@ -79,60 +114,79 @@ export default async function ProtocolosPage({ searchParams }: PageProps) {
         })}
       </div>
 
-      {/* Lista */}
-      {protocols && protocols.length > 0 ? (
-        <ol className="border-y-2 border-stone-900 divide-y-2 divide-stone-900">
-          {protocols.map((p, i) => (
-            <li
-              key={p.id}
-              className="group hover:bg-stone-100 transition-colors"
-            >
-              <div className="flex items-center gap-3 -mx-6 px-6">
-              <Link
-                href={`/admin/protocolos/${p.id}/editar`}
-                className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-4 py-6"
-              >
-                <span className="lg:col-span-1 font-mono text-sm tracking-[0.14em] text-stone-500">
-                  {String(i + 1).padStart(2, "0")}
-                </span>
-                <div className="lg:col-span-6">
-                  <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-stone-500">
-                    {PROTOCOL_TYPE_LABEL[p.type as keyof typeof PROTOCOL_TYPE_LABEL] ?? p.type}
-                    {p.specialty ? ` · ${p.specialty}` : ""}
-                  </p>
-                  <h2 className="font-serif font-medium text-xl text-stone-950 mt-1 group-hover:text-emerald-800 transition-colors">
-                    {p.title}
+      {/* Lista agrupada por categoria */}
+      {sections.length > 0 ? (
+        <div className="space-y-12">
+          {sections.map(({ type, label }) => {
+            const group = grouped[type];
+            return (
+              <section key={type}>
+                <div className="flex items-baseline justify-between border-b-2 border-stone-900 pb-2">
+                  <h2 className="font-mono text-xs uppercase tracking-[0.18em] text-stone-700">
+                    {label}
                   </h2>
-                  <p className="text-xs text-stone-400 font-mono mt-1">
-                    /{p.slug}
-                  </p>
+                  <span className="font-mono text-xs text-stone-400 tracking-[0.14em]">
+                    {group.length}
+                  </span>
                 </div>
-                <div className="lg:col-span-2 flex items-start">
-                  <StatusBadge status={p.status} />
-                </div>
-                <div className="lg:col-span-2 lg:text-right text-sm text-stone-500 font-mono">
-                  {new Date(p.updated_at).toLocaleDateString("pt-BR", {
-                    day: "2-digit",
-                    month: "short",
-                    year: "numeric",
-                  })}
-                </div>
-                <div className="lg:col-span-1 flex lg:justify-end items-start text-stone-400 group-hover:text-emerald-800 transition-colors">
-                  <ArrowUpRight className="size-5" />
-                </div>
-              </Link>
-                <ProtocolRowActions
-                  protocolId={p.id}
-                  title={p.title}
-                  status={p.status}
-                  type={p.type}
-                  specialty={p.specialty}
-                  summary={p.summary}
-                />
-              </div>
-            </li>
-          ))}
-        </ol>
+                <ol className="border-b-2 border-stone-900 divide-y-2 divide-stone-900">
+                  {group.map((p, i) => (
+                    <li
+                      key={p.id}
+                      className="group hover:bg-stone-100 transition-colors"
+                    >
+                      <div className="flex items-center gap-3 -mx-6 px-6">
+                        <Link
+                          href={`/admin/protocolos/${p.id}/editar`}
+                          className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-4 py-6"
+                        >
+                          <span className="lg:col-span-1 font-mono text-sm tracking-[0.14em] text-stone-500">
+                            {String(i + 1).padStart(2, "0")}
+                          </span>
+                          <div className="lg:col-span-6">
+                            <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-stone-500">
+                              {PROTOCOL_TYPE_LABEL[
+                                p.type as keyof typeof PROTOCOL_TYPE_LABEL
+                              ] ?? p.type}
+                              {p.specialty ? ` · ${p.specialty}` : ""}
+                            </p>
+                            <h3 className="font-serif font-medium text-xl text-stone-950 mt-1 group-hover:text-emerald-800 transition-colors">
+                              {p.title}
+                            </h3>
+                            <p className="text-xs text-stone-400 font-mono mt-1">
+                              /{p.slug}
+                            </p>
+                          </div>
+                          <div className="lg:col-span-2 flex items-start">
+                            <StatusBadge status={p.status} />
+                          </div>
+                          <div className="lg:col-span-2 lg:text-right text-sm text-stone-500 font-mono">
+                            {new Date(p.updated_at).toLocaleDateString("pt-BR", {
+                              day: "2-digit",
+                              month: "short",
+                              year: "numeric",
+                            })}
+                          </div>
+                          <div className="lg:col-span-1 flex lg:justify-end items-start text-stone-400 group-hover:text-emerald-800 transition-colors">
+                            <ArrowUpRight className="size-5" />
+                          </div>
+                        </Link>
+                        <ProtocolRowActions
+                          protocolId={p.id}
+                          title={p.title}
+                          status={p.status}
+                          type={p.type}
+                          specialty={p.specialty}
+                          summary={p.summary}
+                        />
+                      </div>
+                    </li>
+                  ))}
+                </ol>
+              </section>
+            );
+          })}
+        </div>
       ) : (
         <div className="border-2 border-dashed border-stone-300 px-6 py-16 text-center">
           <p className="font-serif text-2xl text-stone-700 mb-2">
