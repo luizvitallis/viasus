@@ -1,9 +1,10 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowRight, HeartPulse } from "lucide-react";
+import { HeartPulse } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { WaveHeader } from "@/components/decorations/wave-header";
 import { HealthPattern } from "@/components/decorations/health-pattern";
+import { ProtocolList } from "./protocol-list";
 import type { ProtocolType } from "@/types/domain";
 
 interface TenantPageProps {
@@ -122,14 +123,27 @@ export default async function TenantPage({
     counts[p.type] = (counts[p.type] ?? 0) + 1;
   }
 
-  // Lista filtrada pela aba ativa
-  const { data: protocols } = await supabase
+  // Lista filtrada pela aba ativa, em ordem alfabética por título (pt-BR).
+  const { data: protocolsRaw } = await supabase
     .from("protocols")
     .select("id, title, slug, type, specialty, summary, updated_at")
     .eq("tenant_id", tenantRow.id)
     .eq("status", "published")
-    .eq("type", activeTab.value)
-    .order("updated_at", { ascending: false });
+    .eq("type", activeTab.value);
+
+  const protocols = [...(protocolsRaw ?? [])].sort((a, b) =>
+    a.title.localeCompare(b.title, "pt-BR", { sensitivity: "base" }),
+  );
+
+  const emptyTitle = `Nenhum ${activeTab.label
+    .toLowerCase()
+    .replace(/s$/, "")} publicado ainda.`;
+  const emptySub =
+    activeTab.value === "encaminhamento"
+      ? "Os protocolos de encaminhamento interativos chegam na próxima fase."
+      : activeTab.value === "pop"
+        ? "Os fluxos administrativos chegam na próxima fase."
+        : `Os curadores de ${tenantRow.name} estão preparando esse conteúdo. Volte em breve.`;
 
   return (
     <div className="min-h-screen flex flex-col bg-stone-50">
@@ -212,64 +226,13 @@ export default async function TenantPage({
         {/* Lista */}
         <section className="border-b-2 border-stone-900">
           <div className="mx-auto max-w-6xl px-6 py-12 sm:py-16">
-            {protocols && protocols.length > 0 ? (
-              <ol className="border-y-2 border-stone-900 divide-y-2 divide-stone-900">
-                {protocols.map((p, i) => (
-                  <li key={p.id}>
-                    <Link
-                      href={`/${tenantRow.subdomain}/protocolos/${p.slug}`}
-                      className="grid grid-cols-1 lg:grid-cols-12 gap-6 py-7 sm:py-8 group hover:bg-stone-100 transition-colors -mx-6 px-6"
-                    >
-                      <div className="lg:col-span-1 font-mono text-sm tracking-[0.14em] text-stone-500">
-                        {String(i + 1).padStart(2, "0")}
-                      </div>
-                      <div className="lg:col-span-7">
-                        <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-stone-500">
-                          {typeShortLabel[p.type] ?? p.type}
-                          {p.specialty ? ` · ${p.specialty}` : ""}
-                        </p>
-                        <h2 className="font-serif font-medium text-2xl text-stone-950 mt-2 group-hover:text-emerald-800 transition-colors">
-                          {p.title}
-                        </h2>
-                        {p.summary && (
-                          <p className="mt-3 text-stone-700 leading-relaxed line-clamp-2">
-                            {p.summary}
-                          </p>
-                        )}
-                      </div>
-                      <div className="lg:col-span-3 lg:text-right text-sm text-stone-500 font-mono">
-                        Atualizado em{" "}
-                        {new Date(p.updated_at).toLocaleDateString("pt-BR", {
-                          day: "2-digit",
-                          month: "short",
-                          year: "numeric",
-                        })}
-                      </div>
-                      <div className="lg:col-span-1 flex lg:justify-end items-start">
-                        <ArrowRight
-                          className="size-5 text-stone-400 group-hover:text-emerald-800 group-hover:translate-x-1 transition-all"
-                          strokeWidth={2}
-                        />
-                      </div>
-                    </Link>
-                  </li>
-                ))}
-              </ol>
-            ) : (
-              <div className="border-2 border-dashed border-stone-300 px-6 py-16 text-center">
-                <p className="font-serif text-2xl text-stone-700 mb-2">
-                  Nenhum {activeTab.label.toLowerCase().replace(/s$/, "")}{" "}
-                  publicado ainda.
-                </p>
-                <p className="text-stone-500 max-w-md mx-auto">
-                  {activeTab.value === "encaminhamento"
-                    ? "Os protocolos de encaminhamento interativos chegam na próxima fase."
-                    : activeTab.value === "pop"
-                      ? "Os fluxos administrativos chegam na próxima fase."
-                      : `Os curadores de ${tenantRow.name} estão preparando esse conteúdo. Volte em breve.`}
-                </p>
-              </div>
-            )}
+            <ProtocolList
+              protocols={protocols}
+              subdomain={tenantRow.subdomain}
+              typeShortLabel={typeShortLabel}
+              emptyTitle={emptyTitle}
+              emptySub={emptySub}
+            />
           </div>
         </section>
       </main>
