@@ -42,6 +42,7 @@ import {
   hasFieldToken,
   newReferralField,
   newReferralNode,
+  placeholderValues,
   renameFieldToken,
   slugifyFieldKey,
   stripFieldToken,
@@ -154,7 +155,7 @@ export function ReferralEditor({
     [data.tree],
   );
   const previewText = useMemo(
-    () => generateJustification(data, allCheckedIds),
+    () => generateJustification(data, allCheckedIds, placeholderValues(data.tree)),
     [data, allCheckedIds],
   );
 
@@ -360,10 +361,11 @@ export function ReferralEditor({
             Justificativa com tudo marcado
           </h2>
           <p className="text-sm text-stone-600 mb-6">
-            Esta é a saída quando o profissional marca todos os itens. No
-            visualizador real, só os itens marcados aparecem, e cada{" "}
-            <span className="font-mono">___</span> é substituído pelo resultado
-            que ele preencher.
+            Esta é a saída quando o profissional marca todos os itens e informa
+            todos os resultados. Cada <span className="font-mono">___</span> é
+            substituído pelo valor que ele digitar — e o campo que ele deixar em
+            branco sai da frase, em vez de virar{" "}
+            <span className="font-mono">___</span> no prontuário.
           </p>
 
           <div className="border-2 border-stone-900 bg-white p-5">
@@ -746,7 +748,8 @@ function FieldsEditor({ node, onChangeFields }: FieldsEditorProps) {
                   )}
                   {!used && (
                     <span className="text-stone-500">
-                      sem o marcador, vai anexado ao fim
+                      sem o marcador, vai anexado ao fim (e sai da frase se
+                      ficar em branco)
                     </span>
                   )}
 

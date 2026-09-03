@@ -135,7 +135,7 @@ export function ReferralViewer({
         </section>
 
         {/* Coluna 2 — Justificativa em tempo real */}
-        <aside className="lg:col-span-5 lg:order-2 order-1 lg:sticky lg:top-20 lg:self-start">
+        <aside className="lg:col-span-5 lg:order-2 order-1 lg:sticky lg:top-20 lg:self-start lg:max-h-[calc(100vh-6rem)] lg:overflow-y-auto">
           <div className="bg-[var(--color-caucaia-red)] text-white px-4 py-2 flex items-center justify-between">
             <p className="font-mono text-[11px] uppercase tracking-[0.18em]">
               Justificativa pra prontuário
@@ -176,9 +176,8 @@ export function ReferralViewer({
               {pendingCount > 0 && (
                 <p className="flex items-start gap-1.5 text-xs text-amber-700 leading-relaxed">
                   <AlertTriangle className="size-3.5 shrink-0 mt-px" />
-                  {pendingCount} resultado{pendingCount === 1 ? "" : "s"} não
-                  preenchido{pendingCount === 1 ? "" : "s"} — o texto entra com{" "}
-                  <span className="font-mono">___</span> no lugar do valor.
+                  {pendingCount} sem valor — a justificativa só inclui o que
+                  você preencher.
                 </p>
               )}
             </div>
@@ -220,7 +219,7 @@ export function ReferralViewer({
             <p className="mt-2 flex items-start gap-1.5 text-xs text-amber-700 leading-relaxed">
               <AlertTriangle className="size-3.5 shrink-0 mt-px" />
               Ainda há {pendingCount} resultado
-              {pendingCount === 1 ? "" : "s"} sem valor.
+              {pendingCount === 1 ? "" : "s"} sem valor — {pendingCount === 1 ? "ele fica" : "eles ficam"} de fora do texto.
             </p>
           )}
 
