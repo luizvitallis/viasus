@@ -11,6 +11,7 @@ import {
   History,
   Loader2,
   Paperclip,
+  PencilLine,
   Plus,
   Send,
   Trash2,
@@ -23,9 +24,12 @@ import {
 } from "@/app/admin/protocolos/[id]/editar/actions";
 import {
   type ReferralData,
+  type ReferralField,
+  type ReferralFieldType,
   type ReferralNode,
   type ReferralCategory,
   REFERRAL_CATEGORY_LABEL,
+  REFERRAL_FIELD_TYPE_LABEL,
   PROTOCOL_STATUS_LABEL,
 } from "@/types/domain";
 import {
@@ -35,8 +39,15 @@ import {
   deleteNodeAt,
   emptyReferralData,
   generateJustification,
+  hasFieldToken,
+  newReferralField,
   newReferralNode,
+  placeholderValues,
+  renameFieldToken,
+  slugifyFieldKey,
+  stripFieldToken,
   type TreePath,
+  uniqueFieldKey,
   updateNodeAt,
 } from "@/lib/referral";
 
@@ -144,7 +155,7 @@ export function ReferralEditor({
     [data.tree],
   );
   const previewText = useMemo(
-    () => generateJustification(data, allCheckedIds),
+    () => generateJustification(data, allCheckedIds, placeholderValues(data.tree)),
     [data, allCheckedIds],
   );
 
@@ -250,6 +261,12 @@ export function ReferralEditor({
             <p className="text-sm text-stone-600 mt-1">
               Cada item vira um checkbox no visualizador. O texto inserido em
               cada item é concatenado na justificativa final na ordem da árvore.
+              Itens com campo de resultado pedem o valor ao profissional e o
+              encaixam na frase pelo marcador{" "}
+              <code className="font-mono text-xs bg-stone-200 px-1">
+                {"{chave}"}
+              </code>
+              .
             </p>
           </div>
 
@@ -344,8 +361,11 @@ export function ReferralEditor({
             Justificativa com tudo marcado
           </h2>
           <p className="text-sm text-stone-600 mb-6">
-            Esta é a saída quando o profissional marca todos os itens. No
-            visualizador real, só os itens marcados aparecem.
+            Esta é a saída quando o profissional marca todos os itens e informa
+            todos os resultados. Cada <span className="font-mono">___</span> é
+            substituído pelo valor que ele digitar — e o campo que ele deixar em
+            branco sai da frase, em vez de virar{" "}
+            <span className="font-mono">___</span> no prontuário.
           </p>
 
           <div className="border-2 border-stone-900 bg-white p-5">
@@ -535,6 +555,18 @@ function NodeEditor({
           />
         </div>
 
+        <FieldsEditor
+          node={node}
+          onChangeFields={(fields, text) =>
+            onUpdate(
+              path,
+              text === undefined
+                ? { fields }
+                : { fields, text_when_checked: text },
+            )
+          }
+        />
+
         <div className="flex items-center gap-2 text-xs">
           <button
             type="button"
@@ -571,6 +603,171 @@ function NodeEditor({
         </ul>
       )}
     </li>
+  );
+}
+
+interface FieldsEditorProps {
+  node: ReferralNode;
+  /** `text` só vem definido quando o marcador na frase também muda. */
+  onChangeFields: (fields: ReferralField[], text?: string) => void;
+}
+
+const FIELD_TYPE_OPTIONS: ReferralFieldType[] = ["texto", "numero", "data"];
+
+function FieldsEditor({ node, onChangeFields }: FieldsEditorProps) {
+  const fields = node.fields ?? [];
+  const text = node.text_when_checked ?? "";
+
+  const patchField = (id: string, patch: Partial<ReferralField>) =>
+    onChangeFields(fields.map((f) => (f.id === id ? { ...f, ...patch } : f)));
+
+  const setKey = (field: ReferralField, desired: string) => {
+    const key = uniqueFieldKey(desired, fields, field.id);
+    onChangeFields(
+      fields.map((f) => (f.id === field.id ? { ...f, key } : f)),
+      renameFieldToken(text, field.key, key),
+    );
+  };
+
+  // Enquanto a chave ainda for a derivada automaticamente do rótulo, ela
+  // acompanha o rótulo (e o marcador já escrito na frase é reescrito junto).
+  const setLabel = (field: ReferralField, label: string) => {
+    const isAutoKey = field.key === uniqueFieldKey(field.label, fields, field.id);
+    if (!isAutoKey) {
+      patchField(field.id, { label });
+      return;
+    }
+    const key = uniqueFieldKey(label, fields, field.id);
+    onChangeFields(
+      fields.map((f) => (f.id === field.id ? { ...f, label, key } : f)),
+      renameFieldToken(text, field.key, key),
+    );
+  };
+
+  const insertToken = (field: ReferralField) => {
+    const next = text.trim() ? `${text.trim()} {${field.key}}` : `{${field.key}}`;
+    onChangeFields(fields, next);
+  };
+
+  const removeField = (field: ReferralField) =>
+    onChangeFields(
+      fields.filter((f) => f.id !== field.id),
+      stripFieldToken(text, field.key),
+    );
+
+  return (
+    <div className="border-2 border-dashed border-stone-200 p-2.5 space-y-2.5">
+      <div className="flex items-center justify-between gap-2">
+        <span className="inline-flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.18em] text-stone-600">
+          <PencilLine className="size-3" />
+          Campos de resultado
+          {fields.length > 0 && ` · ${fields.length}`}
+        </span>
+        <button
+          type="button"
+          onClick={() => onChangeFields([...fields, newReferralField(fields)])}
+          className="inline-flex items-center gap-1 text-xs font-medium text-emerald-800 hover:text-emerald-900"
+        >
+          <Plus className="size-3" />
+          Adicionar campo
+        </button>
+      </div>
+
+      {fields.length === 0 ? (
+        <p className="text-xs text-stone-500">
+          Nenhum. Adicione um campo se o profissional precisar informar um
+          resultado (ex.: valor de HbA1c) ao marcar este item.
+        </p>
+      ) : (
+        <ul className="space-y-2">
+          {fields.map((field) => {
+            const used = hasFieldToken(text, field.key);
+            return (
+              <li
+                key={field.id}
+                className="border border-stone-300 bg-stone-50 p-2 space-y-2"
+              >
+                <div className="grid grid-cols-1 sm:grid-cols-12 gap-2">
+                  <input
+                    type="text"
+                    value={field.label}
+                    onChange={(e) => setLabel(field, e.target.value)}
+                    placeholder="Rótulo (ex.: HbA1c)"
+                    className="sm:col-span-5 border-2 border-stone-300 px-2 py-1.5 text-sm focus-visible:border-emerald-800 focus-visible:outline-none"
+                  />
+                  <input
+                    type="text"
+                    value={field.unit ?? ""}
+                    onChange={(e) => patchField(field.id, { unit: e.target.value })}
+                    placeholder="Unidade (ex.: %)"
+                    className="sm:col-span-4 border-2 border-stone-300 px-2 py-1.5 text-sm focus-visible:border-emerald-800 focus-visible:outline-none"
+                  />
+                  <select
+                    value={field.type ?? "texto"}
+                    onChange={(e) =>
+                      patchField(field.id, {
+                        type: e.target.value as ReferralFieldType,
+                      })
+                    }
+                    className="sm:col-span-3 border-2 border-stone-300 px-2 py-1.5 text-sm focus-visible:border-emerald-800 focus-visible:outline-none"
+                  >
+                    {FIELD_TYPE_OPTIONS.map((t) => (
+                      <option key={t} value={t}>
+                        {REFERRAL_FIELD_TYPE_LABEL[t]}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="flex items-center gap-2 flex-wrap text-xs">
+                  <span className="inline-flex items-center font-mono text-stone-500">
+                    {"{"}
+                  </span>
+                  <input
+                    type="text"
+                    value={field.key}
+                    onChange={(e) => setKey(field, e.target.value)}
+                    onBlur={(e) => setKey(field, slugifyFieldKey(e.target.value))}
+                    className="w-32 border-b-2 border-stone-300 bg-transparent font-mono text-xs px-1 py-0.5 focus-visible:border-emerald-800 focus-visible:outline-none"
+                  />
+                  <span className="inline-flex items-center font-mono text-stone-500">
+                    {"}"}
+                  </span>
+
+                  {used ? (
+                    <span className="text-emerald-800">na frase</span>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => insertToken(field)}
+                      className="inline-flex items-center gap-1 px-2 py-1 border border-stone-300 hover:border-stone-900 text-stone-700 transition-colors"
+                    >
+                      <Plus className="size-3" />
+                      Inserir na frase
+                    </button>
+                  )}
+                  {!used && (
+                    <span className="text-stone-500">
+                      sem o marcador, vai anexado ao fim (e sai da frase se
+                      ficar em branco)
+                    </span>
+                  )}
+
+                  <button
+                    type="button"
+                    onClick={() => removeField(field)}
+                    className="inline-flex items-center gap-1 px-2 py-1 border border-stone-300 hover:border-destructive hover:text-destructive text-stone-600 transition-colors ml-auto"
+                  >
+                    <Trash2 className="size-3" />
+                    Remover campo
+                  </button>
+                </div>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </div>
   );
 }
 
