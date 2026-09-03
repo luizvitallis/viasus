@@ -1,11 +1,18 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Check, Copy, ListChecks } from "lucide-react";
-import { generateJustification } from "@/lib/referral";
+import { AlertTriangle, Check, Copy, ListChecks, PencilLine } from "lucide-react";
+import {
+  collectCheckedFieldNodes,
+  countPendingValues,
+  generateJustification,
+  valueKey,
+} from "@/lib/referral";
 import {
   type ReferralData,
+  type ReferralField,
   type ReferralNode,
+  type ReferralValues,
   REFERRAL_CATEGORY_LABEL,
 } from "@/types/domain";
 import { trackUsage } from "./track-usage";
@@ -24,6 +31,7 @@ export function ReferralViewer({
   data,
 }: ReferralViewerProps) {
   const [checked, setChecked] = useState<Set<string>>(new Set());
+  const [values, setValues] = useState<ReferralValues>({});
   const [copied, setCopied] = useState(false);
 
   // Track open_protocol on mount
@@ -38,8 +46,18 @@ export function ReferralViewer({
   }, []);
 
   const justification = useMemo(
-    () => generateJustification(data, checked),
+    () => generateJustification(data, checked, values),
+    [data, checked, values],
+  );
+
+  // Itens marcados que pedem resultado — renderizados como campos no painel.
+  const fieldNodes = useMemo(
+    () => collectCheckedFieldNodes(data, checked),
     [data, checked],
+  );
+  const pendingCount = useMemo(
+    () => countPendingValues(data, checked, values),
+    [data, checked, values],
   );
 
   const toggle = (id: string) => {
@@ -60,6 +78,10 @@ export function ReferralViewer({
       }
       return next;
     });
+  };
+
+  const setValue = (key: string, value: string) => {
+    setValues((prev) => ({ ...prev, [key]: value }));
   };
 
   const handleCopy = async () => {
@@ -123,6 +145,45 @@ export function ReferralViewer({
             </span>
           </div>
 
+          {/* Campos de resultado dos itens marcados */}
+          {fieldNodes.length > 0 && (
+            <div className="border-2 border-t-0 border-stone-900 bg-stone-50 px-4 py-4 space-y-4">
+              <div className="flex items-center gap-2 text-stone-700">
+                <PencilLine className="size-4" />
+                <p className="font-mono text-[11px] uppercase tracking-[0.18em]">
+                  Preencha os resultados
+                </p>
+              </div>
+
+              {fieldNodes.map((node) => (
+                <div key={node.id} className="space-y-2">
+                  <p className="text-sm font-medium text-stone-900 leading-tight">
+                    {node.label}
+                  </p>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    {(node.fields ?? []).map((field) => (
+                      <ValueInput
+                        key={field.id}
+                        field={field}
+                        value={values[valueKey(node.id, field.id)] ?? ""}
+                        onChange={(v) => setValue(valueKey(node.id, field.id), v)}
+                      />
+                    ))}
+                  </div>
+                </div>
+              ))}
+
+              {pendingCount > 0 && (
+                <p className="flex items-start gap-1.5 text-xs text-amber-700 leading-relaxed">
+                  <AlertTriangle className="size-3.5 shrink-0 mt-px" />
+                  {pendingCount} resultado{pendingCount === 1 ? "" : "s"} não
+                  preenchido{pendingCount === 1 ? "" : "s"} — o texto entra com{" "}
+                  <span className="font-mono">___</span> no lugar do valor.
+                </p>
+              )}
+            </div>
+          )}
+
           <div className="border-2 border-t-0 border-stone-900 bg-white p-5 min-h-[160px]">
             {totalChecked === 0 ? (
               <p className="text-stone-400 italic">
@@ -155,6 +216,14 @@ export function ReferralViewer({
             )}
           </button>
 
+          {pendingCount > 0 && (
+            <p className="mt-2 flex items-start gap-1.5 text-xs text-amber-700 leading-relaxed">
+              <AlertTriangle className="size-3.5 shrink-0 mt-px" />
+              Ainda há {pendingCount} resultado
+              {pendingCount === 1 ? "" : "s"} sem valor.
+            </p>
+          )}
+
           <p className="mt-3 text-xs text-stone-500 leading-relaxed">
             Cole a justificativa no prontuário. Lembre de revisar antes de
             confirmar — o texto é gerado a partir do que você marcou e pode
@@ -163,6 +232,36 @@ export function ReferralViewer({
         </aside>
       </div>
     </div>
+  );
+}
+
+interface ValueInputProps {
+  field: ReferralField;
+  value: string;
+  onChange: (value: string) => void;
+}
+
+function ValueInput({ field, value, onChange }: ValueInputProps) {
+  const empty = !value.trim();
+  const unit = field.unit?.trim();
+
+  return (
+    <label className="block">
+      <span className="block font-mono text-[10px] uppercase tracking-[0.14em] text-stone-600 mb-1">
+        {field.label}
+        {unit && <span className="text-stone-400"> ({unit})</span>}
+      </span>
+      <input
+        type={field.type === "data" ? "date" : "text"}
+        inputMode={field.type === "numero" ? "decimal" : undefined}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={field.placeholder ?? (unit ? `— ${unit}` : "—")}
+        className={`w-full border-2 px-3 h-10 text-sm bg-white focus-visible:border-emerald-800 focus-visible:outline-none ${
+          empty ? "border-amber-400" : "border-stone-900"
+        }`}
+      />
+    </label>
   );
 }
 
@@ -176,6 +275,7 @@ interface NodeRendererProps {
 function NodeRenderer({ node, depth, checked, onToggle }: NodeRendererProps) {
   const isChecked = checked.has(node.id);
   const hasChildren = node.children && node.children.length > 0;
+  const fieldCount = node.fields?.length ?? 0;
 
   return (
     <li
@@ -207,6 +307,18 @@ function NodeRenderer({ node, depth, checked, onToggle }: NodeRendererProps) {
                 }`}
               >
                 {REFERRAL_CATEGORY_LABEL[node.category]}
+              </span>
+            )}
+            {fieldCount > 0 && (
+              <span
+                className={`inline-flex items-center gap-1 font-mono text-[10px] uppercase tracking-[0.14em] ${
+                  isChecked ? "text-emerald-700" : "text-stone-500"
+                }`}
+              >
+                <PencilLine className="size-3" />
+                {fieldCount === 1
+                  ? "pede resultado"
+                  : `${fieldCount} resultados`}
               </span>
             )}
           </div>

@@ -56,13 +56,45 @@ export type ReferralCategory =
   | "exame"
   | "achado";
 
+/**
+ * Campo de preenchimento associado a um item do checklist (ex.: resultado de
+ * exame). O profissional preenche no visualizador e o valor entra na frase
+ * da justificativa pelo marcador `{chave}` — ou, se o marcador não existir
+ * no texto, anexado ao fim entre parênteses.
+ */
+export type ReferralFieldType = "texto" | "numero" | "data";
+
+export interface ReferralField {
+  id: string;
+  /** Chave usada no marcador `{chave}` dentro de `text_when_checked`. */
+  key: string;
+  /** Rótulo exibido ao profissional no painel da justificativa. */
+  label: string;
+  unit?: string | null;
+  type?: ReferralFieldType;
+  placeholder?: string | null;
+}
+
 export interface ReferralNode {
   id: string;
   label: string;
   text_when_checked?: string;
   category?: ReferralCategory | null;
+  fields?: ReferralField[];
   children?: ReferralNode[];
 }
+
+/**
+ * Valores preenchidos pelo profissional no visualizador.
+ * Chave: `${nodeId}::${fieldId}`.
+ */
+export type ReferralValues = Record<string, string>;
+
+export const REFERRAL_FIELD_TYPE_LABEL: Record<ReferralFieldType, string> = {
+  texto: "Texto",
+  numero: "Número",
+  data: "Data",
+};
 
 export interface ReferralData {
   introduction?: string;
