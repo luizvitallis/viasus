@@ -2,11 +2,12 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Loader2, Trash2, Copy, Pencil, X } from "lucide-react";
+import { Loader2, Trash2, Copy, Pencil, X, EyeOff, ArchiveRestore } from "lucide-react";
 import { PROTOCOL_TYPE_LABEL } from "@/types/domain";
 import {
   deleteProtocolAction,
   duplicateProtocolAction,
+  unpublishProtocolAction,
   updateProtocolInfoAction,
 } from "./actions";
 
@@ -43,7 +44,7 @@ export function ProtocolRowActions({
 
   const willArchive = status !== "draft";
   const confirmMsg = willArchive
-    ? `Arquivar "${title}"?\n\nEle sai das listas (pública e do acervo ativo), mas o histórico é preservado e dá pra restaurar depois.`
+    ? `Arquivar "${title}"?\n\nEle sai das listas (pública e do acervo ativo), mas o histórico é preservado e dá pra restaurar como rascunho depois.`
     : `Excluir "${title}" permanentemente?\n\nIsso apaga o fluxograma, anexos e métricas deste protocolo. NÃO dá pra desfazer.`;
 
   return (
@@ -91,6 +92,48 @@ export function ProtocolRowActions({
           <Copy className="size-4" />
         )}
       </button>
+
+      {/* Despublicar (published) / Restaurar como rascunho (archived) */}
+      {status !== "draft" && (
+        <button
+          type="button"
+          disabled={pending}
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            const msg =
+              status === "archived"
+                ? `Restaurar "${title}" como rascunho?
+
+Ele volta ao acervo para edição. Não fica público até ser publicado de novo.`
+                : `Despublicar "${title}"?
+
+Ele sai da leitura pública imediatamente e volta a ser rascunho. O histórico de versões é preservado; publicar de novo gera uma nova versão.`;
+            if (!confirm(msg)) return;
+            startTransition(async () => {
+              const res = await unpublishProtocolAction(protocolId);
+              if (!res.ok) {
+                alert(res.error ?? "Erro ao despublicar.");
+                return;
+              }
+              router.refresh();
+            });
+          }}
+          className="inline-flex items-center justify-center size-9 border-2 border-stone-300 hover:border-stone-900 hover:text-stone-900 text-stone-500 transition-colors disabled:opacity-50"
+          title={status === "archived" ? "Restaurar como rascunho" : "Despublicar"}
+          aria-label={
+            status === "archived"
+              ? `Restaurar ${title} como rascunho`
+              : `Despublicar ${title}`
+          }
+        >
+          {status === "archived" ? (
+            <ArchiveRestore className="size-4" />
+          ) : (
+            <EyeOff className="size-4" />
+          )}
+        </button>
+      )}
 
       {/* Excluir / Arquivar */}
       <button

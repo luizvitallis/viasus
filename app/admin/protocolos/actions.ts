@@ -127,6 +127,75 @@ export async function deleteProtocolAction(
 }
 
 // ----------------------------------------------------------------------------
+// unpublishProtocolAction — volta um protocolo publicado (ou arquivado) para
+// rascunho. Sai da leitura pública na hora (RLS anon filtra status='published');
+// as versões em protocol_versions ficam intactas e republicar gera nova versão.
+// Permissão: mesmos papéis que podem publicar.
+// ----------------------------------------------------------------------------
+export interface UnpublishProtocolResult {
+  ok: boolean;
+  error?: string;
+}
+
+export async function unpublishProtocolAction(
+  protocolId: string,
+): Promise<UnpublishProtocolResult> {
+  const parsed = ProtocolIdSchema.safeParse(protocolId);
+  if (!parsed.success) return { ok: false, error: "ID inválido." };
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { ok: false, error: "Não autenticado." };
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("tenant_id, role")
+    .eq("id", user.id)
+    .single();
+  if (!profile) return { ok: false, error: "Perfil não encontrado." };
+  if (!["gestor", "publicador", "admin"].includes(profile.role)) {
+    return { ok: false, error: "Seu papel não permite despublicar." };
+  }
+
+  const { data: protocol } = await supabase
+    .from("protocols")
+    .select("id, tenant_id, title, slug, status")
+    .eq("id", protocolId)
+    .single();
+  if (!protocol) return { ok: false, error: "Protocolo não encontrado." };
+  if (protocol.tenant_id !== profile.tenant_id) {
+    return { ok: false, error: "Cross-tenant negado." };
+  }
+  if (protocol.status === "draft") {
+    return { ok: false, error: "Este protocolo já está em rascunho." };
+  }
+
+  const { error } = await supabase
+    .from("protocols")
+    .update({ status: "draft" })
+    .eq("id", protocolId);
+  if (error) return { ok: false, error: `Erro ao despublicar: ${error.message}` };
+
+  // Sem valor próprio no enum audit_action: registra como update com o evento
+  // no payload (a tela de auditoria reconhece `event: "unpublish"`).
+  await logAudit({
+    supabase,
+    action: "update",
+    protocolId,
+    payload: {
+      event: "unpublish",
+      from_status: protocol.status,
+      title: protocol.title,
+      slug: protocol.slug,
+    },
+  });
+  revalidatePath("/admin/protocolos");
+  return { ok: true };
+}
+
+// ----------------------------------------------------------------------------
 // duplicateProtocolAction — copia um protocolo inteiro (grafo + conteúdo) como
 // novo rascunho, pra criar outro parecido só editando (ex.: trocar o título).
 // Não copia anexos (arquivos no Storage) — só o fluxograma/conteúdo.
