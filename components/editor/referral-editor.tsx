@@ -8,6 +8,7 @@ import {
   CircleAlert,
   CircleCheck,
   ExternalLink,
+  EyeOff,
   History,
   Loader2,
   Paperclip,
@@ -22,6 +23,7 @@ import {
   publishProtocol,
   saveReferralData,
 } from "@/app/admin/protocolos/[id]/editar/actions";
+import { unpublishProtocolAction } from "@/app/admin/protocolos/actions";
 import {
   type ReferralData,
   type ReferralField,
@@ -178,6 +180,24 @@ export function ReferralEditor({
     }
   }, [protocolId, changeNote]);
 
+  const handleUnpublish = useCallback(async () => {
+    if (
+      !confirm(
+        "Despublicar este protocolo?\n\nEle sai da leitura pública imediatamente e volta a ser rascunho. O histórico de versões é preservado; publicar de novo gera uma nova versão.",
+      )
+    )
+      return;
+    setPublishing(true);
+    const result = await unpublishProtocolAction(protocolId);
+    setPublishing(false);
+    if (result.ok) {
+      toast.success("Protocolo despublicado. Agora é rascunho.");
+      setCurrentStatus("draft");
+    } else {
+      toast.error(result.error ?? "Erro ao despublicar");
+    }
+  }, [protocolId]);
+
   return (
     <div className="min-h-screen flex flex-col bg-stone-50">
       <Toaster position="bottom-center" richColors closeButton />
@@ -233,6 +253,18 @@ export function ReferralEditor({
               Ver pública
               <ExternalLink className="size-3.5" />
             </a>
+          )}
+          {canPublish && currentStatus === "published" && (
+            <button
+              type="button"
+              onClick={handleUnpublish}
+              disabled={publishing}
+              className="inline-flex items-center gap-2 border-2 border-stone-300 hover:border-stone-900 text-stone-700 hover:text-stone-900 font-medium px-3 h-9 transition-colors disabled:opacity-50"
+              title="Tirar da leitura pública e voltar a rascunho"
+            >
+              <EyeOff className="size-3.5" />
+              Despublicar
+            </button>
           )}
           {canPublish && (
             <button
