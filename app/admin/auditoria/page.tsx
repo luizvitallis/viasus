@@ -26,6 +26,14 @@ const ACTION_COLOR: Record<string, string> = {
   view: "border-stone-400 text-stone-500",
 };
 
+function isUnpublish(payload: unknown): boolean {
+  return (
+    typeof payload === "object" &&
+    payload !== null &&
+    (payload as { event?: unknown }).event === "unpublish"
+  );
+}
+
 interface PageProps {
   searchParams: Promise<{ before?: string }>;
 }
@@ -149,7 +157,9 @@ export default async function AuditoriaPage({ searchParams }: PageProps) {
                     <span
                       className={`inline-flex items-center px-2 py-0.5 border ${ACTION_COLOR[e.action] ?? "border-stone-300 text-stone-600"} font-mono text-[11px] uppercase tracking-[0.14em] bg-white`}
                     >
-                      {ACTION_LABEL[e.action] ?? e.action}
+                      {isUnpublish(e.payload)
+                        ? "despublicou"
+                        : ACTION_LABEL[e.action] ?? e.action}
                     </span>
                   </div>
                   <div className="lg:col-span-3">
