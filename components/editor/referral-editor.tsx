@@ -32,8 +32,13 @@ import {
   type ReferralCategory,
   REFERRAL_CATEGORY_LABEL,
   REFERRAL_FIELD_TYPE_LABEL,
+  REFERRAL_RISKS,
+  REFERRAL_RISK_COLOR,
+  REFERRAL_RISK_LABEL,
+  type ReferralRisk,
   PROTOCOL_STATUS_LABEL,
 } from "@/types/domain";
+import { PEC_ESPECIALIDADES } from "@/lib/pec";
 import {
   addChildAt,
   collectAllIds,
@@ -123,6 +128,10 @@ export function ReferralEditor({
   // Atualizadores de árvore
   const updateIntroduction = (text: string) => {
     setData((d) => ({ ...d, introduction: text }));
+    markDirty();
+  };
+  const updateEspecialidade = (text: string) => {
+    setData((d) => ({ ...d, especialidade_sisreg: text || null }));
     markDirty();
   };
   const updateClosing = (text: string) => {
@@ -299,6 +308,33 @@ export function ReferralEditor({
                 {"{chave}"}
               </code>
               .
+            </p>
+          </div>
+
+          {/* Especialidade no e-SUS PEC */}
+          <div className="space-y-2">
+            <label
+              htmlFor="especialidade-sisreg"
+              className="block font-mono text-[11px] uppercase tracking-[0.18em] text-stone-700"
+            >
+              Especialidade no e-SUS PEC
+            </label>
+            <input
+              id="especialidade-sisreg"
+              list="pec-especialidades"
+              value={data.especialidade_sisreg ?? ""}
+              onChange={(e) => updateEspecialidade(e.target.value)}
+              placeholder="CONSULTA EM CARDIOLOGIA"
+              className="w-full border-2 border-stone-300 px-3 py-2 text-sm font-mono focus-visible:border-emerald-800 focus-visible:outline-none"
+            />
+            <datalist id="pec-especialidades">
+              {PEC_ESPECIALIDADES.map((e) => (
+                <option key={e} value={e} />
+              ))}
+            </datalist>
+            <p className="text-xs text-stone-500">
+              Quando o profissional escolher esta especialidade no
+              encaminhamento do PEC, a extensão ViaSus abre este protocolo.
             </p>
           </div>
 
@@ -543,8 +579,29 @@ function NodeEditor({
               value={node.label}
               onChange={(e) => onUpdate(path, { label: e.target.value })}
               placeholder="Ex.: PA ≥ 140/90 com 3 anti-hipertensivos"
-              className="sm:col-span-9 border-2 border-stone-300 px-3 py-1.5 text-sm focus-visible:border-emerald-800 focus-visible:outline-none"
+              className="sm:col-span-6 border-2 border-stone-300 px-3 py-1.5 text-sm focus-visible:border-emerald-800 focus-visible:outline-none"
             />
+            <select
+              value={node.risk ?? "none"}
+              onChange={(e) =>
+                onUpdate(path, {
+                  risk:
+                    e.target.value === "none"
+                      ? null
+                      : (e.target.value as ReferralRisk),
+                })
+              }
+              aria-label="Classificação de risco"
+              title="Classificação de risco no PEC — o encaminhamento herda o maior risco entre os itens marcados"
+              className="sm:col-span-3 border-2 border-stone-300 px-2 py-1.5 text-sm focus-visible:border-emerald-800 focus-visible:outline-none"
+            >
+              <option value="none">Risco: —</option>
+              {REFERRAL_RISKS.map((r) => (
+                <option key={r} value={r}>
+                  {REFERRAL_RISK_LABEL[r]} ({REFERRAL_RISK_COLOR[r]})
+                </option>
+              ))}
+            </select>
             <select
               value={node.category ?? "none"}
               onChange={(e) =>

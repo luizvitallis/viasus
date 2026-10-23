@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { AlertTriangle, Check, Copy, ListChecks, PencilLine } from "lucide-react";
 import {
   collectCheckedFieldNodes,
+  computeRisk,
   countPendingValues,
   generateJustification,
   valueKey,
@@ -15,6 +16,7 @@ import {
   type ReferralValues,
   REFERRAL_CATEGORY_LABEL,
 } from "@/types/domain";
+import { RiskBadge } from "@/components/shared/risk-badge";
 import { trackUsage } from "./track-usage";
 
 interface ReferralViewerProps {
@@ -49,6 +51,8 @@ export function ReferralViewer({
     () => generateJustification(data, checked, values),
     [data, checked, values],
   );
+
+  const risk = useMemo(() => computeRisk(data.tree, checked), [data, checked]);
 
   // Itens marcados que pedem resultado — renderizados como campos no painel.
   const fieldNodes = useMemo(
@@ -144,6 +148,25 @@ export function ReferralViewer({
               {totalChecked} marcado{totalChecked === 1 ? "" : "s"}
             </span>
           </div>
+
+          {/* Classificação de risco resultante (maior risco entre os marcados) */}
+          {risk && (
+            <div className="border-2 border-t-0 border-stone-900 bg-white px-4 py-3 space-y-2">
+              <div className="flex items-center gap-2">
+                <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-stone-700">
+                  Classificação de risco
+                </p>
+                <RiskBadge risk={risk} />
+              </div>
+              {risk === "emergencia" && (
+                <p className="flex items-start gap-2 text-sm text-red-800">
+                  <AlertTriangle className="size-4 shrink-0 mt-0.5" />
+                  Situação de emergência: encaminhar imediatamente à UPA /
+                  emergência hospitalar (SAMU 192). Não aguardar regulação.
+                </p>
+              )}
+            </div>
+          )}
 
           {/* Campos de resultado dos itens marcados */}
           {fieldNodes.length > 0 && (
@@ -299,6 +322,7 @@ function NodeRenderer({ node, depth, checked, onToggle }: NodeRendererProps) {
             >
               {node.label}
             </p>
+            {node.risk && <RiskBadge risk={node.risk} />}
             {node.category && (
               <span
                 className={`font-mono text-[10px] uppercase tracking-[0.14em] ${

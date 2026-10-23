@@ -206,11 +206,31 @@ const ReferralCategorySchema = z.enum([
   "achado",
 ]);
 
+const ReferralRiskSchema = z.enum([
+  "eletivo",
+  "prioritario",
+  "urgencia",
+  "emergencia",
+]);
+
+// z.object descarta chaves não declaradas — todo campo de ReferralNode
+// precisa estar aqui, senão some no save.
+const ReferralFieldSchema = z.object({
+  id: z.string(),
+  key: z.string(),
+  label: z.string(),
+  unit: z.string().nullable().optional(),
+  type: z.enum(["texto", "numero", "data"]).optional(),
+  placeholder: z.string().nullable().optional(),
+});
+
 type ReferralNodeShape = {
   id: string;
   label: string;
   text_when_checked?: string;
   category?: z.infer<typeof ReferralCategorySchema> | null;
+  risk?: z.infer<typeof ReferralRiskSchema> | null;
+  fields?: z.infer<typeof ReferralFieldSchema>[];
   children?: ReferralNodeShape[];
 };
 
@@ -220,11 +240,14 @@ const ReferralNodeSchema: z.ZodType<ReferralNodeShape> = z.lazy(() =>
     label: z.string().default(""),
     text_when_checked: z.string().optional(),
     category: ReferralCategorySchema.nullable().optional(),
+    risk: ReferralRiskSchema.nullable().optional(),
+    fields: z.array(ReferralFieldSchema).optional(),
     children: z.array(ReferralNodeSchema).optional(),
   }),
 );
 
 const ReferralDataSchema = z.object({
+  especialidade_sisreg: z.string().max(200).nullable().optional(),
   introduction: z.string().optional(),
   closing: z.string().optional(),
   tree: z.array(ReferralNodeSchema),

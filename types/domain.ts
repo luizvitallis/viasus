@@ -75,11 +75,42 @@ export interface ReferralField {
   placeholder?: string | null;
 }
 
+/**
+ * Classificação de risco do item — espelha os 4 valores do campo
+ * "Classificação de risco" do encaminhamento no e-SUS PEC e as cores dos
+ * protocolos (azul / verde / amarelo / vermelho). O encaminhamento herda o
+ * MAIOR risco entre os itens marcados.
+ */
+export type ReferralRisk = "eletivo" | "prioritario" | "urgencia" | "emergencia";
+
+export const REFERRAL_RISKS: ReferralRisk[] = [
+  "eletivo",
+  "prioritario",
+  "urgencia",
+  "emergencia",
+];
+
+export const REFERRAL_RISK_LABEL: Record<ReferralRisk, string> = {
+  eletivo: "Eletivo",
+  prioritario: "Prioritário",
+  urgencia: "Urgência",
+  emergencia: "Emergência",
+};
+
+/** Cor do protocolo impresso, usada como apoio visual ao rótulo. */
+export const REFERRAL_RISK_COLOR: Record<ReferralRisk, string> = {
+  eletivo: "Azul",
+  prioritario: "Verde",
+  urgencia: "Amarelo",
+  emergencia: "Vermelho",
+};
+
 export interface ReferralNode {
   id: string;
   label: string;
   text_when_checked?: string;
   category?: ReferralCategory | null;
+  risk?: ReferralRisk | null;
   fields?: ReferralField[];
   children?: ReferralNode[];
 }
@@ -97,6 +128,12 @@ export const REFERRAL_FIELD_TYPE_LABEL: Record<ReferralFieldType, string> = {
 };
 
 export interface ReferralData {
+  /**
+   * Especialidade como aparece no campo "Especialidade" do e-SUS PEC
+   * (ex.: "CONSULTA EM CARDIOLOGIA"). A extensão do PEC usa isso para abrir
+   * o protocolo certo.
+   */
+  especialidade_sisreg?: string | null;
   introduction?: string;
   closing?: string;
   tree: ReferralNode[];

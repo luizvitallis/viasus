@@ -577,6 +577,7 @@ pnpm lint
 - ✅ Fase 8 — 4 abas na home pública por tipo de documento
 - ✅ Fase 9 — Protocolos de Encaminhamento (checklist hierárquico + gerador de texto; migration 0006 aplicada)
 - ✅ Fase 10 — Fluxos Administrativos (nó tipo `documento`; migration 0007 aplicada)
+- 🚧 Fase 11 — Extensão do e-SUS PEC (`extension/`, Chrome/Edge MV3, JS puro sem build). Encaminhamento ganha `risk` por item e `especialidade_sisreg`; endpoint `GET /api/public/[tenant]/encaminhamentos`. Piloto em `localhost:8080` (PEC de treinamento). `extension/referral.js` é porte de `lib/referral.ts` — manter em sincronia (`pnpm test:extension`).
 
 **Tipos de documento suportados:**
 - `linha_cuidado` → Linhas de Cuidado (fluxograma)
