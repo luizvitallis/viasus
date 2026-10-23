@@ -43,3 +43,6 @@ supabase/.temp/
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Páginas do e-SUS PEC salvas para mapear a extensão (podem conter dado de cidadão)
+/paginas/
