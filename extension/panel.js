@@ -133,6 +133,7 @@
     const itemEls = new Map();
 
     function buildNode(node, valueKey) {
+      const risk = globalThis.ViaSusReferral.nodeRisk(node);
       const fields = (node.fields || []).map((f) =>
         h("label", {}, [
           f.label + (f.unit ? " (" + f.unit + ")" : ""),
@@ -153,9 +154,9 @@
           checkbox,
           h("div", {}, [
             h("div", { class: "lbl" }, node.label),
-            node.risk || node.category
+            risk || node.category
               ? h("div", { class: "tags" }, [
-                  node.risk ? riskBadge(node.risk) : null,
+                  risk ? riskBadge(risk) : null,
                   node.category ? h("span", { class: "cat" }, CATEGORY_LABEL[node.category] || node.category) : null,
                 ])
               : null,

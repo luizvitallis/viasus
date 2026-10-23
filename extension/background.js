@@ -55,6 +55,20 @@ async function getProtocols(force) {
   }
 }
 
+// Abas do PEC abertas antes da instalação/atualização não recebem o content
+// script sozinhas — injeta nelas para não exigir F5 do profissional.
+const PEC_URLS = ["http://localhost:8080/*", "http://127.0.0.1:8080/*"];
+const CONTENT_FILES = ["referral.js", "pec.js", "panel.js", "content.js"];
+
+chrome.runtime.onInstalled.addListener(async () => {
+  const tabs = await chrome.tabs.query({ url: PEC_URLS });
+  for (const tab of tabs) {
+    chrome.scripting
+      .executeScript({ target: { tabId: tab.id }, files: CONTENT_FILES })
+      .catch((err) => console.warn("[ViaSus] não injetou na aba", tab.id, err));
+  }
+});
+
 chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
   if (msg && msg.type === "viasus:getProtocols") {
     getProtocols(msg.force).then(sendResponse);
