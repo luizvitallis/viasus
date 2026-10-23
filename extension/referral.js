@@ -103,13 +103,28 @@
     return parts.join(" ").replace(/\s+/g, " ").trim();
   }
 
+  // Espelha nodeRisk() de lib/referral.ts.
+  const RISK_EMOJI = [
+    [/\u{1F534}/u, "emergencia"],
+    [/[\u{1F7E1}\u{1F7E0}]/u, "urgencia"],
+    [/\u{1F7E2}/u, "prioritario"],
+    [/\u{1F535}/u, "eletivo"],
+  ];
+
+  function nodeRisk(node) {
+    if (node.risk) return node.risk;
+    for (const [re, risk] of RISK_EMOJI) {
+      if (re.test(node.label || "")) return risk;
+    }
+    return null;
+  }
+
   function computeRisk(tree, checkedIds) {
     let max = -1;
     (function walk(nodes) {
       for (const n of nodes) {
-        if (checkedIds.has(n.id) && n.risk) {
-          max = Math.max(max, RISKS.indexOf(n.risk));
-        }
+        const risk = checkedIds.has(n.id) ? nodeRisk(n) : null;
+        if (risk) max = Math.max(max, RISKS.indexOf(risk));
         if (n.children) walk(n.children);
       }
     })(tree);
@@ -120,6 +135,7 @@
     RISKS,
     valueKey,
     renderNodeText,
+    nodeRisk,
     generateJustification,
     computeRisk,
   };
