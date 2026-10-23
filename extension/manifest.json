@@ -1,0 +1,31 @@
+{
+  "manifest_version": 3,
+  "name": "ViaSus — Encaminhamento no e-SUS PEC",
+  "short_name": "ViaSus PEC",
+  "version": "0.1.0",
+  "description": "Abre o protocolo de encaminhamento do ViaSus no e-SUS PEC e preenche o motivo e a classificação de risco conforme os itens marcados.",
+  "minimum_chrome_version": "110",
+  "permissions": ["storage"],
+  "host_permissions": [
+    "https://viasus.vercel.app/*",
+    "http://localhost:3000/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["http://localhost:8080/*", "http://127.0.0.1:8080/*"],
+      "js": ["referral.js", "pec.js", "panel.js", "content.js"],
+      "run_at": "document_idle"
+    }
+  ],
+  "options_ui": {
+    "page": "options.html",
+    "open_in_tab": false
+  },
+  "action": {
+    "default_title": "ViaSus PEC",
+    "default_popup": "options.html"
+  }
+}

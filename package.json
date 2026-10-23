@@ -9,6 +9,7 @@
     "lint": "eslint",
     "seed": "tsx scripts/seed.ts",
     "test:rls": "tsx scripts/test-tenant-isolation.ts",
+    "test:extension": "tsx scripts/test-extension-referral.ts",
     "gen:types": "supabase gen types typescript --project-id xmptfpbfszasvtifergg > types/supabase.ts"
   },
   "dependencies": {
