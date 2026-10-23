@@ -3,11 +3,13 @@
  * (árvore hierárquica de condições/achados + gerador de texto).
  */
 
-import type {
-  ReferralData,
-  ReferralField,
-  ReferralNode,
-  ReferralValues,
+import {
+  REFERRAL_RISKS,
+  type ReferralData,
+  type ReferralField,
+  type ReferralNode,
+  type ReferralRisk,
+  type ReferralValues,
 } from "@/types/domain";
 
 export function emptyReferralData(): ReferralData {
@@ -316,6 +318,27 @@ export function generateJustification(
   ].filter(Boolean);
 
   return parts.join(" ").replace(/\s+/g, " ").trim();
+}
+
+/**
+ * Maior risco entre os itens marcados (eletivo < prioritário < urgência <
+ * emergência). `null` quando nenhum item marcado tem risco definido.
+ */
+export function computeRisk(
+  tree: ReferralNode[],
+  checkedIds: Set<string>,
+): ReferralRisk | null {
+  let max = -1;
+  function walk(nodes: ReferralNode[]) {
+    for (const n of nodes) {
+      if (checkedIds.has(n.id) && n.risk) {
+        max = Math.max(max, REFERRAL_RISKS.indexOf(n.risk));
+      }
+      if (n.children) walk(n.children);
+    }
+  }
+  walk(tree);
+  return max >= 0 ? REFERRAL_RISKS[max] : null;
 }
 
 /**
