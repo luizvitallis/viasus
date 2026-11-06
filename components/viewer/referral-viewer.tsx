@@ -6,6 +6,7 @@ import {
   collectCheckedFieldNodes,
   computeRisk,
   countPendingValues,
+  nodeRisk,
   generateJustification,
   valueKey,
 } from "@/lib/referral";
@@ -322,7 +323,7 @@ function NodeRenderer({ node, depth, checked, onToggle }: NodeRendererProps) {
             >
               {node.label}
             </p>
-            {node.risk && <RiskBadge risk={node.risk} />}
+            {nodeRisk(node) && <RiskBadge risk={nodeRisk(node)!} />}
             {node.category && (
               <span
                 className={`font-mono text-[10px] uppercase tracking-[0.14em] ${

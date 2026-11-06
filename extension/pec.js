@@ -98,10 +98,28 @@
     return (editor.innerText || "").replace(/\s+/g, " ").trim();
   }
 
+  /** Ponto (nó, offset) no início ou no fim de uma folha `[data-text]` do Draft.js. */
+  function leafPoint(leaf, atEnd) {
+    const textNode = leaf.firstChild && leaf.firstChild.nodeType === Node.TEXT_NODE ? leaf.firstChild : null;
+    if (textNode) return [textNode, atEnd ? textNode.length : 0];
+    // Bloco vazio: <span data-offset-key><br data-text="true"></span>
+    return [leaf.parentNode, 0];
+  }
+
+  /**
+   * Seleciona todo o texto do editor ancorando nas folhas do Draft.js — ele só
+   * entende seleções dentro de `[data-offset-key]`, não na raiz do editor.
+   */
   function selectAll(editor) {
     editor.focus();
+    const leaves = editor.querySelectorAll('[data-text="true"]');
     const range = document.createRange();
-    range.selectNodeContents(editor);
+    if (leaves.length) {
+      range.setStart(...leafPoint(leaves[0], false));
+      range.setEnd(...leafPoint(leaves[leaves.length - 1], true));
+    } else {
+      range.selectNodeContents(editor);
+    }
     const sel = window.getSelection();
     sel.removeAllRanges();
     sel.addRange(range);
@@ -109,39 +127,37 @@
 
   /**
    * Substitui todo o conteúdo do editor Draft.js por `text`.
-   * Draft.js só aceita texto que passe pelos eventos de edição dele, então
-   * simulamos digitação (insertText) e, se não pegar, um "colar".
-   * Retorna true se o editor terminou com exatamente esse texto.
+   * Nunca altera o DOM do editor direto (execCommand etc.): o React do PEC
+   * quebra a página inteira quando o DOM diverge do estado do Draft.js. Usa só
+   * eventos que o próprio Draft.js trata e cancela — "colar" para escrever,
+   * Backspace para apagar. Retorna true se o editor terminou com esse texto.
    */
   async function writeMotivo(editor, text) {
     const expected = text.replace(/\s+/g, " ").trim();
+    if (!editor.isConnected) return false;
     if (readMotivo(editor) === expected) return true;
 
-    // 1) Digitação simulada. A espera deixa o Draft.js registrar a seleção.
+    // A espera deixa o Draft.js registrar a seleção (evento selectionchange).
     selectAll(editor);
     await wait(30);
-    if (expected) {
-      document.execCommand("insertText", false, text);
-    } else {
-      document.execCommand("delete", false);
-    }
-    await wait(30);
-    if (readMotivo(editor) === expected) return true;
-
-    // 2) Colar.
-    selectAll(editor);
-    await wait(30);
+    if (!editor.isConnected) return false;
     try {
-      const dt = new DataTransfer();
-      dt.setData("text/plain", text);
-      editor.dispatchEvent(
-        new ClipboardEvent("paste", { clipboardData: dt, bubbles: true, cancelable: true }),
-      );
+      if (expected) {
+        const dt = new DataTransfer();
+        dt.setData("text/plain", text);
+        editor.dispatchEvent(
+          new ClipboardEvent("paste", { clipboardData: dt, bubbles: true, cancelable: true }),
+        );
+      } else {
+        editor.dispatchEvent(
+          new KeyboardEvent("keydown", { key: "Backspace", code: "Backspace", keyCode: 8, which: 8, bubbles: true, cancelable: true }),
+        );
+      }
     } catch {
-      /* ClipboardEvent indisponível — cai no retorno false */
+      /* evento indisponível — cai no retorno false */
     }
     await wait(30);
-    return readMotivo(editor) === expected;
+    return editor.isConnected && readMotivo(editor) === expected;
   }
 
   global.ViaSusPec = {

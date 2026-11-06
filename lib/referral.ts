@@ -320,6 +320,26 @@ export function generateJustification(
   return parts.join(" ").replace(/\s+/g, " ").trim();
 }
 
+// Curadores costumam marcar a cor do protocolo impresso com emoji no rótulo.
+const RISK_EMOJI: [RegExp, ReferralRisk][] = [
+  [/\u{1F534}/u, "emergencia"], // 🔴
+  [/[\u{1F7E1}\u{1F7E0}]/u, "urgencia"], // 🟡 🟠
+  [/\u{1F7E2}/u, "prioritario"], // 🟢
+  [/\u{1F535}/u, "eletivo"], // 🔵
+];
+
+/**
+ * Risco do item: o definido no editor ou, na falta dele, o emoji de cor no
+ * rótulo (🔴 emergência, 🟡/🟠 urgência, 🟢 prioritário, 🔵 eletivo).
+ */
+export function nodeRisk(node: ReferralNode): ReferralRisk | null {
+  if (node.risk) return node.risk;
+  for (const [re, risk] of RISK_EMOJI) {
+    if (re.test(node.label ?? "")) return risk;
+  }
+  return null;
+}
+
 /**
  * Maior risco entre os itens marcados (eletivo < prioritário < urgência <
  * emergência). `null` quando nenhum item marcado tem risco definido.
@@ -331,9 +351,8 @@ export function computeRisk(
   let max = -1;
   function walk(nodes: ReferralNode[]) {
     for (const n of nodes) {
-      if (checkedIds.has(n.id) && n.risk) {
-        max = Math.max(max, REFERRAL_RISKS.indexOf(n.risk));
-      }
+      const risk = checkedIds.has(n.id) ? nodeRisk(n) : null;
+      if (risk) max = Math.max(max, REFERRAL_RISKS.indexOf(risk));
       if (n.children) walk(n.children);
     }
   }

@@ -5,10 +5,15 @@ profissional marca os itens, a extensão preenche o **Motivo do
 encaminhamento** e marca a **Classificação de risco** com o maior risco
 entre os itens marcados.
 
-Funciona no Chrome e no Edge. Por enquanto atua só no PEC em
-`http://localhost:8080` (PEC de treinamento).
+Funciona no Chrome e no Edge. Atua só no PEC de produção de Caucaia
+(`https://esus.caucaia.ce.gov.br`).
 
-## Instalar (piloto, sem loja)
+## Instalar
+
+Pela Chrome Web Store (link distribuído pela SMS). Publicação e novas
+versões: ver `loja-extensao-pec/LEIAME.md`.
+
+## Instalar para desenvolvimento (sem loja)
 
 1. Abra `chrome://extensions` (no Edge: `edge://extensions`).
 2. Ligue o **Modo do desenvolvedor**.
@@ -48,3 +53,9 @@ No editor do ViaSus, no protocolo de encaminhamento:
 | `content.js` | Orquestra: detecta especialidade, sincroniza com o PEC. |
 | `background.js` | Busca `/api/public/[tenant]/encaminhamentos` e guarda cópia offline. |
 | `options.*` | Tela de configuração (endereço do ViaSus e município). |
+| `icon-*.png` | Ícones (gerados a partir de `app/icon.png`). |
+
+Para testar em outro PEC (ex.: treinamento em `localhost:8080`), adicione o
+endereço em `host_permissions` e `content_scripts.matches` do
+`manifest.json` e em `PEC_URLS` do `background.js` — só na sua cópia local,
+não no pacote da loja.

@@ -54,6 +54,8 @@ const data: ReferralData = {
       risk: "emergencia",
     },
     { id: "d", label: "Sem texto", risk: "eletivo" },
+    { id: "e", label: "🟡 Angina com piora progressiva", text_when_checked: "Angina instável" },
+    { id: "g", label: "🟢 Suspeita de HAS secundária", text_when_checked: "Suspeita de HAS secundária" },
   ],
 };
 
@@ -73,6 +75,8 @@ const cases: { name: string; checked: string[]; values?: ReferralValues }[] = [
   },
   { name: "emergência + sem texto", checked: ["c", "d"] },
   { name: "tudo", checked: ["a", "a1", "b", "c", "d"], values: { "b::f3": "4,2" } },
+  { name: "risco pelo emoji 🟡", checked: ["e", "g"] },
+  { name: "risco pelo emoji 🟢 + eletivo explícito", checked: ["g", "d"] },
 ];
 
 let failures = 0;

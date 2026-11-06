@@ -10,6 +10,12 @@
 (function () {
   "use strict";
 
+  // Pode ser injetado de novo (instalação/atualização com a aba aberta).
+  if (globalThis.__viasusPecLoaded) return;
+  globalThis.__viasusPecLoaded = true;
+  // Painel de uma cópia anterior da extensão (antes de recarregar) sai da tela.
+  document.querySelectorAll("#viasus-pec-extension").forEach((el) => el.remove());
+
   const R = globalThis.ViaSusReferral;
   const PEC = globalThis.ViaSusPec;
   const TICK_MS = 700;
@@ -207,6 +213,13 @@
   };
 
   async function tick() {
+    // Extensão recarregada/atualizada: esta cópia ficou órfã — sai de cena.
+    if (!chrome.runtime || !chrome.runtime.id) {
+      clearInterval(interval);
+      if (panel) panel.destroy();
+      panel = null;
+      return;
+    }
     const form = PEC.findForm();
     const especialidade = form ? PEC.getEspecialidade(form) : "";
 
@@ -235,8 +248,11 @@
     if (form && state.protocol && !syncing) detectManualEdits(form);
   }
 
+  // Começa a observar já; a lista de protocolos chega quando a busca terminar
+  // (tick refaz a casa da especialidade quando a lista muda).
   loadProtocols(false).then(() => {
-    setInterval(tick, TICK_MS);
+    state.especialidade = "";
     tick();
   });
+  const interval = setInterval(tick, TICK_MS);
 })();
