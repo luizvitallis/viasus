@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <title>ViaSus PEC</title>
+    <style>
+      * { box-sizing: border-box; }
+      body {
+        margin: 0; width: 340px; padding: 14px;
+        background: #fafaf9; color: #1c1917;
+        font: 14px/1.4 "IBM Plex Sans", "Segoe UI", Arial, sans-serif;
+      }
+      h1 { margin: 0 0 2px; font: 600 16px/1.25 "IBM Plex Serif", Georgia, serif; }
+      .kicker { font: 11px/1.2 "IBM Plex Mono", Consolas, monospace; text-transform: uppercase; letter-spacing: .16em; color: #065f46; }
+      label { display: grid; gap: 4px; margin-top: 12px; font-size: 12px; color: #44403c; }
+      input { font: 13px "IBM Plex Mono", Consolas, monospace; padding: 6px 8px; border: 2px solid #d6d3d1; background: #fff; }
+      input:focus { outline: none; border-color: #065f46; }
+      .actions { display: flex; gap: 8px; margin-top: 14px; }
+      button { cursor: pointer; font: inherit; font-size: 13px; padding: 6px 12px; border: 2px solid #065f46; background: #065f46; color: #fafaf9; }
+      button:hover { background: #064e3b; }
+      button.secondary { background: #fff; color: #44403c; border-color: #d6d3d1; }
+      button.secondary:hover { border-color: #1c1917; color: #1c1917; }
+      #status { margin-top: 12px; padding: 8px; border: 2px solid #d6d3d1; background: #fff; font-size: 12px; }
+      #status ul { margin: 6px 0 0; padding-left: 16px; }
+      .muted { color: #78716c; }
+      .err { color: #991b1b; }
+    </style>
+  </head>
+  <body>
+    <div class="kicker">ViaSus · e-SUS PEC</div>
+    <h1>Protocolos de encaminhamento</h1>
+
+    <label>
+      Endereço do ViaSus
+      <input id="baseUrl" type="url" placeholder="https://viasus.vercel.app" />
+    </label>
+    <label>
+      Município (identificador no ViaSus)
+      <input id="tenant" type="text" placeholder="caucaia-ce" />
+    </label>
+
+    <div class="actions">
+      <button id="save" type="button">Salvar e atualizar</button>
+      <button id="refresh" type="button" class="secondary">Atualizar protocolos</button>
+    </div>
+
+    <div id="status" class="muted">Carregando…</div>
+
+    <script src="options.js"></script>
+  </body>
+</html>

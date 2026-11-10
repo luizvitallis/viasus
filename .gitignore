@@ -47,5 +47,3 @@ next-env.d.ts
 # Páginas do e-SUS PEC salvas para mapear a extensão (podem conter dado de cidadão)
 /paginas/
 
-# Pacote da extensão (gerado por loja-extensao-pec/empacotar.ps1)
-/loja-extensao-pec/*.zip

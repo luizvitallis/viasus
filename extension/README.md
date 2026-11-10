@@ -11,7 +11,7 @@ Funciona no Chrome e no Edge. Atua só no PEC de produção de Caucaia
 ## Instalar
 
 Pela Chrome Web Store (link distribuído pela SMS). Publicação e novas
-versões: ver `loja-extensao-pec/LEIAME.md`.
+versões: ver `versoes-extensao/LEIAME.md`.
 
 ## Instalar para desenvolvimento (sem loja)
 
@@ -55,7 +55,7 @@ No editor do ViaSus, no protocolo de encaminhamento:
 | `options.*` | Tela de configuração (endereço do ViaSus e município). |
 | `icon-*.png` | Ícones (gerados a partir de `app/icon.png`). |
 
-Para testar em outro PEC (ex.: treinamento em `localhost:8080`), adicione o
-endereço em `host_permissions` e `content_scripts.matches` do
-`manifest.json` e em `PEC_URLS` do `background.js` — só na sua cópia local,
-não no pacote da loja.
+Esta pasta é a versão da **loja** (só PEC de produção). Para o PEC de
+treinamento em `localhost:8080`, use a versão gerada em
+`versoes-extensao/pec/<versão>/` (`versoes-extensao/empacotar.ps1`), que
+funciona no local e na produção.

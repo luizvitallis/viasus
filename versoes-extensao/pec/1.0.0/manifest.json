@@ -1,0 +1,41 @@
+{
+  "manifest_version": 3,
+  "name": "ViaSus — Encaminhamento no e-SUS PEC (local + produção)",
+  "short_name": "ViaSus PEC",
+  "version": "1.0.0",
+  "description": "Abre o protocolo de encaminhamento do ViaSus no e-SUS PEC e preenche o motivo e a classificação de risco conforme os itens marcados.",
+  "minimum_chrome_version": "110",
+  "icons": {
+    "16": "icon-16.png",
+    "32": "icon-32.png",
+    "48": "icon-48.png",
+    "128": "icon-128.png"
+  },
+  "permissions": ["storage", "scripting"],
+  "host_permissions": [
+    "https://viasus.vercel.app/*",
+    "https://esus.caucaia.ce.gov.br/*", "http://localhost:8080/*", "http://127.0.0.1:8080/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://esus.caucaia.ce.gov.br/*", "http://localhost:8080/*", "http://127.0.0.1:8080/*"],
+      "js": ["referral.js", "pec.js", "panel.js", "content.js"],
+      "run_at": "document_idle"
+    }
+  ],
+  "options_ui": {
+    "page": "options.html",
+    "open_in_tab": false
+  },
+  "action": {
+    "default_title": "ViaSus PEC",
+    "default_popup": "options.html",
+    "default_icon": {
+      "16": "icon-16.png",
+      "32": "icon-32.png"
+    }
+  }
+}

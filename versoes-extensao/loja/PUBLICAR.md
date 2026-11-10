@@ -7,11 +7,11 @@ para copiar e colar nos campos do painel da loja.
 
 | Arquivo | Onde usar no painel da loja |
 |---|---|
-| `viasus-pec-1.0.0.zip` | **Pacote** → "Fazer upload de novo pacote" |
+| `<versão>/viasus-pec-<versão>.zip` (ex.: `1.0.0/viasus-pec-1.0.0.zip`) | **Pacote** → "Fazer upload de novo pacote" |
 | `imagens/icone-128x128.png` | **Detalhes do item da loja** → Ícone da loja |
 | `imagens/captura-1280x800.png` | **Detalhes do item da loja** → Capturas de tela |
 | `imagens/bloco-promocional-440x280.png` | **Detalhes do item da loja** → Bloco promocional pequeno |
-| `empacotar.ps1` | Gera um `.zip` novo quando a extensão mudar (ver final) |
+| `../empacotar.ps1` | Gera um `.zip` novo quando a extensão mudar (ver final) |
 
 A política de privacidade fica publicada no site do ViaSus:
 **https://viasus.vercel.app/extensao/privacidade** (no ar depois que o PR
@@ -33,7 +33,7 @@ for mesclado na `main`).
 
 ### 2. Enviar o pacote
 
-1. Clique em **Novo item** e envie `viasus-pec-1.0.0.zip`.
+1. Clique em **Novo item** e envie `1.0.0/viasus-pec-1.0.0.zip`.
 
 ### 3. Detalhes do item da loja
 
@@ -156,7 +156,8 @@ https://viasus.vercel.app/extensao/privacidade
 1. Faça a mudança em `extension/` e aumente `version` em
    `extension/manifest.json` (ex.: `1.0.0` → `1.0.1`).
 2. Na raiz do projeto, rode:
-   `powershell -ExecutionPolicy Bypass -File loja-extensao-pec\empacotar.ps1`
+   `powershell -ExecutionPolicy Bypass -File versoes-extensao\empacotar.ps1`
+   (gera `loja\<versão>\` e `pec\<versão>\` — ver `versoes-extensao/LEIAME.md`)
 3. No painel da loja → **Pacote** → envie o `.zip` novo → **Enviar para
    revisão**. Quem já tem a extensão instalada recebe a atualização
    sozinho.
