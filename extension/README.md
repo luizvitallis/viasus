@@ -5,8 +5,9 @@ profissional marca os itens, a extensão preenche o **Motivo do
 encaminhamento** e marca a **Classificação de risco** com o maior risco
 entre os itens marcados.
 
-Funciona no Chrome e no Edge. Atua só no PEC de produção de Caucaia
-(`https://esus.caucaia.ce.gov.br`).
+Funciona no Chrome e no Edge, no PEC de produção de Caucaia
+(`https://esus.caucaia.ce.gov.br`) e no PEC de treinamento instalado na
+máquina (`http://localhost:8080`). O pacote da loja sai só com o de produção.
 
 ## Instalar
 
@@ -55,7 +56,8 @@ No editor do ViaSus, no protocolo de encaminhamento:
 | `options.*` | Tela de configuração (endereço do ViaSus e município). |
 | `icon-*.png` | Ícones (gerados a partir de `app/icon.png`). |
 
-Esta pasta é a versão da **loja** (só PEC de produção). Para o PEC de
-treinamento em `localhost:8080`, use a versão gerada em
-`versoes-extensao/pec/<versão>/` (`versoes-extensao/empacotar.ps1`), que
-funciona no local e na produção.
+Endereços do PEC: a lista fica em `host_permissions` e
+`content_scripts.matches` do `manifest.json` e em `PEC_URLS` do
+`background.js`, sempre na mesma linha e na mesma ordem — o
+`versoes-extensao/empacotar.ps1` procura essa linha para tirar os
+endereços locais do pacote da loja.

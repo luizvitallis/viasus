@@ -7,8 +7,11 @@ Cada versão da extensão fica guardada aqui, em duas formas:
 | `loja/<versão>/viasus-pec-<versão>.zip` | Enviar à Chrome Web Store | Só no PEC de produção (`esus.caucaia.ce.gov.br`) |
 | `pec/<versão>/` | Instalar direto no navegador ("Carregar sem compactação"), para testar e treinar | No PEC local de treinamento (`localhost:8080`) **e** no de produção |
 
-As duas têm o mesmo código. A da pasta `pec` só libera também o endereço do
-PEC local e aparece no navegador com o nome "(local + produção)".
+As duas têm o mesmo código. A pasta `extension/` do projeto (a que se
+carrega para desenvolver) funciona no PEC local e no de produção; o script
+tira os endereços locais só no pacote da loja. A cópia da pasta `pec`
+aparece no navegador com o nome "(local + produção)", para não confundir
+com a instalada pela loja.
 
 Material de publicação na loja (textos, imagens, passo a passo):
 `loja/PUBLICAR.md`.
