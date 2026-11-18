@@ -11,6 +11,7 @@ import {
 import { createClient } from "@/lib/supabase/server";
 import { ProtocolViewer } from "@/components/viewer/protocol-viewer";
 import { ReferralViewer } from "@/components/viewer/referral-viewer";
+import { AdminSheetViewer } from "@/components/viewer/admin-sheet-viewer";
 import {
   attachmentIcon,
   formatBytes,
@@ -18,6 +19,7 @@ import {
 } from "@/lib/storage";
 import {
   PROTOCOL_TYPE_LABEL,
+  type AdminSheet,
   type EdgeStyle,
   type NodeType,
   type ReferralData,
@@ -58,6 +60,7 @@ interface Snapshot {
   nodes?: SnapshotNode[];
   edges?: SnapshotEdge[];
   referral_data?: ReferralData | null;
+  admin_data?: AdminSheet | null;
 }
 
 export async function generateMetadata({ params }: PageProps) {
@@ -138,7 +141,7 @@ export default async function ProtocolViewerPage({ params }: PageProps) {
   return (
     <div className="min-h-screen flex flex-col bg-stone-50">
       {/* Top bar institucional */}
-      <header className="bg-[var(--color-caucaia-red)] text-white sticky top-0 z-10">
+      <header className="bg-[var(--color-caucaia-red)] text-white sticky top-0 z-10 print:hidden">
         <div className="h-0.5 bg-gradient-to-r from-[var(--color-caucaia-red)] via-stone-700 to-emerald-700" />
         <div className="mx-auto max-w-6xl px-4 sm:px-6 py-2 flex items-center justify-between gap-4 text-[11px] font-mono uppercase tracking-[0.18em]">
           <Link
@@ -156,7 +159,7 @@ export default async function ProtocolViewerPage({ params }: PageProps) {
       </header>
 
       {/* Cabeçalho mínimo do protocolo — uma linha em desktop, foco é o canvas */}
-      <section className="border-b-2 border-stone-900 bg-stone-50">
+      <section className="border-b-2 border-stone-900 bg-stone-50 print:hidden">
         <div className="mx-auto max-w-6xl px-4 sm:px-6 py-2">
           <div className="flex items-baseline gap-3 flex-wrap">
             <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-stone-500 shrink-0">
@@ -186,9 +189,20 @@ export default async function ProtocolViewerPage({ params }: PageProps) {
       </section>
 
       {/* Canvas — dispatch por tipo:
-            - encaminhamento → ReferralViewer (checklist + gerador de texto)
-            - outros         → ProtocolViewer (xyflow read-only) */}
-      {protocol.type === "encaminhamento" ? (
+            - encaminhamento        → ReferralViewer (checklist + gerador de texto)
+            - pop com ficha         → AdminSheetViewer (ficha de fluxo administrativo)
+            - outros / pop antigo   → ProtocolViewer (xyflow read-only) */}
+      {protocol.type === "pop" && snapshot.admin_data ? (
+        <AdminSheetViewer
+          tenantId={tenantRow.id}
+          protocolId={protocol.id}
+          versionId={protocol.active_version_id ?? null}
+          title={protocol.title}
+          sheet={snapshot.admin_data}
+          versionNumber={versionNumber}
+          publishedAt={publishedAt}
+        />
+      ) : protocol.type === "encaminhamento" ? (
         snapshot.referral_data ? (
           <ReferralViewer
             tenantId={tenantRow.id}
@@ -253,7 +267,7 @@ export default async function ProtocolViewerPage({ params }: PageProps) {
 
       {/* Anexos */}
       {attachments && attachments.length > 0 && (
-        <section className="border-t-2 border-stone-900 bg-stone-50">
+        <section className="border-t-2 border-stone-900 bg-stone-50 print:hidden">
           <div className="mx-auto max-w-6xl px-4 sm:px-6 py-10">
             <p className="font-mono text-xs uppercase tracking-[0.18em] text-stone-500 mb-4">
               Documentos anexados
@@ -298,7 +312,7 @@ export default async function ProtocolViewerPage({ params }: PageProps) {
       )}
 
       {/* Rodapé com info da versão */}
-      <footer className="border-t-2 border-stone-900 bg-stone-100">
+      <footer className="border-t-2 border-stone-900 bg-stone-100 print:hidden">
         <div className="h-1 bg-gradient-to-r from-[var(--color-caucaia-red)] via-stone-500 to-stone-900" />
         <div className="mx-auto max-w-6xl px-4 sm:px-6 py-6 grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs font-mono uppercase tracking-[0.14em] text-stone-600">
           <div>

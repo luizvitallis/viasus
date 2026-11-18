@@ -2,7 +2,8 @@
 
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
-import type { NodeType, EdgeStyle } from "@/types/domain";
+import type { AdminSheet, NodeType, EdgeStyle } from "@/types/domain";
+import { hasAdminContent } from "@/lib/admin-sheet";
 
 const NODE_TYPES = [
   "ponto_atencao",
@@ -317,6 +318,105 @@ export async function saveReferralData(payload: unknown): Promise<SaveResult> {
 }
 
 // ----------------------------------------------------------------------------
+// saveAdminData — salva a ficha JSONB dos Fluxos Administrativos (type=pop)
+// ----------------------------------------------------------------------------
+const optText = (max: number) => z.string().max(max).nullable().optional();
+
+// z.object descarta chaves não declaradas — todo campo de AdminSheet
+// precisa estar aqui, senão some no save.
+const AdminItemSchema = z.object({
+  id: uuidish,
+  label: z.string().max(300).default(""),
+  note: optText(500),
+  action: z.enum(["levar", "anexar_e_levar", "apenas_anexar"]).nullable().optional(),
+  code: optText(40),
+  responsible: optText(200),
+  branches: z
+    .array(
+      z.object({
+        id: uuidish,
+        label: z.string().max(200).default(""),
+        target_id: uuidish,
+      }),
+    )
+    .optional(),
+});
+
+const AdminSheetSchema = z.object({
+  layout: z.enum(["requisitos", "etapas"]),
+  kicker: optText(120),
+  subtitle: optText(300),
+  tag: optText(80),
+  who: optText(300),
+  sections: z.array(
+    z.object({
+      id: uuidish,
+      title: z.string().max(200).default(""),
+      items: z.array(AdminItemSchema),
+    }),
+  ),
+  note: optText(2000),
+  alert: optText(2000),
+  reference: optText(300),
+});
+
+const SaveAdminSchema = z.object({
+  protocolId: uuidish,
+  data: AdminSheetSchema,
+});
+
+export async function saveAdminData(payload: unknown): Promise<SaveResult> {
+  const parsed = SaveAdminSchema.safeParse(payload);
+  if (!parsed.success) {
+    const first = parsed.error.issues[0];
+    return {
+      ok: false,
+      error: `Payload inválido em ${first?.path?.join(".") ?? "?"}: ${first?.message ?? "—"}`,
+    };
+  }
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { ok: false, error: "Não autenticado." };
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("tenant_id, role")
+    .eq("id", user.id)
+    .single();
+  if (!profile) return { ok: false, error: "Perfil não encontrado." };
+  if (!["curador", "publicador", "gestor", "admin"].includes(profile.role)) {
+    return { ok: false, error: "Sem permissão para editar." };
+  }
+
+  const { data: protocol } = await supabase
+    .from("protocols")
+    .select("id, tenant_id, type")
+    .eq("id", parsed.data.protocolId)
+    .single();
+  if (!protocol) return { ok: false, error: "Protocolo não encontrado." };
+  if (protocol.tenant_id !== profile.tenant_id) {
+    return { ok: false, error: "Cross-tenant negado." };
+  }
+  if (protocol.type !== "pop") {
+    return { ok: false, error: "Só Fluxos Administrativos usam a ficha." };
+  }
+
+  const { error } = await supabase
+    .from("protocols")
+    .update({
+      admin_data: parsed.data.data,
+      updated_at: new Date().toISOString(),
+    } as never)
+    .eq("id", protocol.id);
+
+  if (error) return { ok: false, error: error.message };
+  return { ok: true, savedAt: new Date().toISOString() };
+}
+
+// ----------------------------------------------------------------------------
 // publishProtocol — congela live nodes/edges em protocol_versions e marca published
 // ----------------------------------------------------------------------------
 const PublishSchema = z.object({
@@ -356,13 +456,14 @@ export async function publishProtocol(payload: unknown): Promise<PublishResult> 
 
   const { data: protocol } = await supabase
     .from("protocols")
-    .select("id, tenant_id, type, referral_data")
+    .select("id, tenant_id, type, referral_data, admin_data")
     .eq("id", parsed.data.protocolId)
     .single();
   if (!protocol) return { ok: false, error: "Protocolo não encontrado." };
   if (protocol.tenant_id !== profile.tenant_id) {
     return { ok: false, error: "Cross-tenant negado." };
   }
+  const adminData = (protocol as { admin_data?: AdminSheet | null }).admin_data ?? null;
 
   // Snapshot dos nós e arestas vivos (vazio se for encaminhamento)
   const [{ data: nodes }, { data: edges }] = await Promise.all([
@@ -379,7 +480,12 @@ export async function publishProtocol(payload: unknown): Promise<PublishResult> 
   // Validação de "tem conteúdo pra publicar":
   //   - Tipos de fluxograma (linha_cuidado, pcdt, pop, diretriz): exige nós
   //   - Encaminhamento: exige árvore não-vazia em referral_data
-  if (protocol.type === "encaminhamento") {
+  //   - Fluxo administrativo com ficha: exige ao menos um item na ficha
+  if (protocol.type === "pop" && adminData) {
+    if (!hasAdminContent(adminData)) {
+      return { ok: false, error: "Adicione ao menos um item à ficha antes de publicar." };
+    }
+  } else if (protocol.type === "encaminhamento") {
     const refTree = (protocol.referral_data as { tree?: unknown[] } | null)
       ?.tree;
     if (!refTree || refTree.length === 0) {
@@ -418,6 +524,7 @@ export async function publishProtocol(payload: unknown): Promise<PublishResult> 
     nodes: nodes ?? [],
     edges: edges ?? [],
     referral_data: protocol.referral_data ?? null,
+    admin_data: adminData,
   };
 
   const { data: newVersion, error: versionErr } = await supabase
