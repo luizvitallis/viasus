@@ -138,6 +138,8 @@ export default async function ProtocolViewerPage({ params }: PageProps) {
     .eq("protocol_id", protocol.id)
     .order("uploaded_at", { ascending: true });
 
+  const isAdminSheet = protocol.type === "pop" && !!snapshot.admin_data;
+
   return (
     <div className="min-h-screen flex flex-col bg-stone-50">
       {/* Top bar institucional */}
@@ -158,41 +160,44 @@ export default async function ProtocolViewerPage({ params }: PageProps) {
         </div>
       </header>
 
-      {/* Cabeçalho mínimo do protocolo — uma linha em desktop, foco é o canvas */}
-      <section className="border-b-2 border-stone-900 bg-stone-50 print:hidden">
-        <div className="mx-auto max-w-6xl px-4 sm:px-6 py-2">
-          <div className="flex items-baseline gap-3 flex-wrap">
-            <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-stone-500 shrink-0">
-              <span className="inline-block w-4 h-px bg-[var(--color-caucaia-red)] align-middle mr-1.5" />
-              {PROTOCOL_TYPE_LABEL[protocol.type as keyof typeof PROTOCOL_TYPE_LABEL] ?? protocol.type}
-              {protocol.specialty ? ` · ${protocol.specialty}` : ""}
-            </p>
-            <h1 className="font-serif font-semibold text-base sm:text-lg text-stone-950 leading-tight flex-1 min-w-0">
-              {protocol.title}
-            </h1>
-            {protocol.summary && (
-              <details className="group shrink-0">
-                <summary className="cursor-pointer hover:text-stone-900 list-none marker:hidden font-mono text-[10px] uppercase tracking-[0.14em] text-stone-500">
-                  <span className="group-open:hidden">ver resumo</span>
-                  <span className="hidden group-open:inline">ocultar</span>
-                  <span className="ml-1 text-stone-400 group-open:rotate-90 inline-block transition-transform">
-                    ›
-                  </span>
-                </summary>
-                <p className="mt-2 text-sm text-stone-700 max-w-3xl leading-relaxed">
-                  {protocol.summary}
-                </p>
-              </details>
-            )}
+      {/* Cabeçalho mínimo do protocolo — uma linha em desktop, foco é o canvas.
+          A ficha de fluxo administrativo já traz título e tipo: sem repetir. */}
+      {!isAdminSheet && (
+        <section className="border-b-2 border-stone-900 bg-stone-50 print:hidden">
+          <div className="mx-auto max-w-6xl px-4 sm:px-6 py-2">
+            <div className="flex items-baseline gap-3 flex-wrap">
+              <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-stone-500 shrink-0">
+                <span className="inline-block w-4 h-px bg-[var(--color-caucaia-red)] align-middle mr-1.5" />
+                {PROTOCOL_TYPE_LABEL[protocol.type as keyof typeof PROTOCOL_TYPE_LABEL] ?? protocol.type}
+                {protocol.specialty ? ` · ${protocol.specialty}` : ""}
+              </p>
+              <h1 className="font-serif font-semibold text-base sm:text-lg text-stone-950 leading-tight flex-1 min-w-0">
+                {protocol.title}
+              </h1>
+              {protocol.summary && (
+                <details className="group shrink-0">
+                  <summary className="cursor-pointer hover:text-stone-900 list-none marker:hidden font-mono text-[10px] uppercase tracking-[0.14em] text-stone-500">
+                    <span className="group-open:hidden">ver resumo</span>
+                    <span className="hidden group-open:inline">ocultar</span>
+                    <span className="ml-1 text-stone-400 group-open:rotate-90 inline-block transition-transform">
+                      ›
+                    </span>
+                  </summary>
+                  <p className="mt-2 text-sm text-stone-700 max-w-3xl leading-relaxed">
+                    {protocol.summary}
+                  </p>
+                </details>
+              )}
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
+      )}
 
       {/* Canvas — dispatch por tipo:
             - encaminhamento        → ReferralViewer (checklist + gerador de texto)
             - pop com ficha         → AdminSheetViewer (ficha de fluxo administrativo)
             - outros / pop antigo   → ProtocolViewer (xyflow read-only) */}
-      {protocol.type === "pop" && snapshot.admin_data ? (
+      {isAdminSheet && snapshot.admin_data ? (
         <AdminSheetViewer
           tenantId={tenantRow.id}
           protocolId={protocol.id}

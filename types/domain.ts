@@ -282,7 +282,7 @@ export const PROTOCOL_TYPE_LABEL: Record<ProtocolType, string> = {
   linha_cuidado: "Linha de Cuidado",
   pcdt: "PCDT",
   encaminhamento: "Encaminhamento Regulado",
-  pop: "POP",
+  pop: "Fluxo administrativo",
   diretriz: "Diretriz",
 };
 

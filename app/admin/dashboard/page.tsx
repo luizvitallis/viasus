@@ -16,7 +16,7 @@ const typeLabel: Record<string, string> = {
   linha_cuidado: "Linha de Cuidado",
   pcdt: "PCDT",
   encaminhamento: "Encaminhamento",
-  pop: "POP",
+  pop: "Fluxo administrativo",
   diretriz: "Diretriz",
 };
 
