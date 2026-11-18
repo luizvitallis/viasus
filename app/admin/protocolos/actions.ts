@@ -240,7 +240,7 @@ export async function duplicateProtocolAction(
 
   const { data: src } = await supabase
     .from("protocols")
-    .select("id, tenant_id, type, title, specialty, summary, tags, referral_data")
+    .select("id, tenant_id, type, title, specialty, summary, tags, referral_data, admin_data")
     .eq("id", protocolId)
     .single();
   if (!src) return { ok: false, error: "Protocolo não encontrado." };
@@ -275,6 +275,7 @@ export async function duplicateProtocolAction(
       summary: src.summary,
       tags: src.tags as never,
       referral_data: (src as { referral_data?: unknown }).referral_data as never,
+      admin_data: (src as { admin_data?: unknown }).admin_data ?? null,
       status: "draft",
       owner_curator_id: user.id,
       created_by: user.id,

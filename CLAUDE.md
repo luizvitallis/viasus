@@ -578,12 +578,13 @@ pnpm lint
 - ✅ Fase 9 — Protocolos de Encaminhamento (checklist hierárquico + gerador de texto; migration 0006 aplicada)
 - ✅ Fase 10 — Fluxos Administrativos (nó tipo `documento`; migration 0007 aplicada)
 - 🚧 Fase 11 — Extensão do e-SUS PEC (`extension/`, Chrome/Edge MV3, JS puro sem build). Encaminhamento ganha `risk` por item e `especialidade_sisreg`; endpoint `GET /api/public/[tenant]/encaminhamentos`. Piloto em `localhost:8080` (PEC de treinamento). `extension/referral.js` é porte de `lib/referral.ts` — manter em sincronia (`pnpm test:extension`).
+- 🚧 Fase 12 — Fluxos Administrativos no formato **ficha** (migration 0015: `protocols.admin_data` JSONB). `pop` deixa de usar o fluxograma: `AdminSheet` com layout `requisitos` (quem pode encaminhar + blocos de itens numerados com ação levar/anexar) ou `etapas` (passos com responsável e desvios). Editor `components/editor/admin-sheet-editor.tsx`, ficha `components/shared/admin-sheet-document.tsx`, viewer com Imprimir/Copiar lista. Conversão dos fluxogramas antigos: `scripts/convert-admin-sheets.ts` (simula por padrão; `--apply` grava e publica versão nova). Nodes/edges antigos ficam no banco como histórico. Regras de conversão testadas em `pnpm test:admin-sheet`.
 
 **Tipos de documento suportados:**
 - `linha_cuidado` → Linhas de Cuidado (fluxograma)
 - `pcdt` → PCDTs (fluxograma)
 - `encaminhamento` → Protocolos de Encaminhamento (checklist + gerador de texto pra prontuário)
-- `pop` → Fluxos Administrativos (fluxograma com nó tipo Documento)
+- `pop` → Fluxos Administrativos (ficha: documentos/exames por bloco ou etapas do atendimento; `admin_data`)
 - `diretriz` → no enum, sem aba na home (surfaceável no futuro se necessário)
 
 **Próximos passos sugeridos (V1.x):** rollout interno na SMS Caucaia, piloto com 2-3 profissionais reais, calculadoras clínicas embutidas, fork de protocolos entre tenants, diff visual entre versões, integração com Encaminhamento Regulado, modo offline (Service Worker), domínio próprio (ex.: `viasus.caucaia.ce.gov.br`).

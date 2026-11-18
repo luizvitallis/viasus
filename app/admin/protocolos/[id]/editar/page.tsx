@@ -3,7 +3,8 @@ import { Toaster } from "sonner";
 import { createClient } from "@/lib/supabase/server";
 import { ProtocolEditor } from "@/components/editor/protocol-editor";
 import { ReferralEditor } from "@/components/editor/referral-editor";
-import type { EdgeStyle, NodeType, ReferralData } from "@/types/domain";
+import { AdminSheetEditor } from "@/components/editor/admin-sheet-editor";
+import type { AdminSheet, EdgeStyle, NodeType, ReferralData } from "@/types/domain";
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -41,7 +42,7 @@ export default async function EditarProtocoloPage({ params }: PageProps) {
 
   const { data: protocol } = await supabase
     .from("protocols")
-    .select("id, title, slug, type, status, tenant_id, referral_data")
+    .select("id, title, slug, type, status, tenant_id, referral_data, admin_data")
     .eq("id", id)
     .single();
   if (!protocol) notFound();
@@ -55,7 +56,24 @@ export default async function EditarProtocoloPage({ params }: PageProps) {
 
   // Dispatch por tipo:
   // - encaminhamento  → ReferralEditor (checklist hierárquico)
+  // - pop             → AdminSheetEditor (ficha de fluxo administrativo)
   // - outros          → ProtocolEditor (xyflow)
+  if (protocol.type === "pop") {
+    return (
+      <AdminSheetEditor
+        protocolId={protocol.id}
+        protocolMeta={{
+          title: protocol.title,
+          status: protocol.status,
+          slug: protocol.slug,
+        }}
+        tenantSubdomain={tenant?.subdomain ?? ""}
+        userRole={profile.role}
+        initialData={(protocol as { admin_data?: AdminSheet | null }).admin_data ?? null}
+      />
+    );
+  }
+
   if (protocol.type === "encaminhamento") {
     return (
       <ReferralEditor

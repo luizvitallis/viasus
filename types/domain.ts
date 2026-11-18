@@ -147,6 +147,83 @@ export const REFERRAL_CATEGORY_LABEL: Record<ReferralCategory, string> = {
   achado: "Achado",
 };
 
+/**
+ * Fluxos Administrativos (type='pop') no formato ficha. Salva em
+ * `protocols.admin_data` (JSONB, migration 0015).
+ *
+ * - `requisitos`: o que levar/anexar para ser encaminhado, em blocos
+ *   (documentos do paciente, impressos, exames…).
+ * - `etapas`: passos do atendimento numerados, com responsável e
+ *   desvios condicionais ("se … → etapa N").
+ */
+export type AdminSheetLayout = "requisitos" | "etapas";
+
+export type AdminItemAction = "levar" | "anexar_e_levar" | "apenas_anexar";
+
+export const ADMIN_ITEM_ACTIONS: AdminItemAction[] = [
+  "levar",
+  "anexar_e_levar",
+  "apenas_anexar",
+];
+
+export const ADMIN_ITEM_ACTION_LABEL: Record<AdminItemAction, string> = {
+  levar: "Levar",
+  anexar_e_levar: "Anexar e levar",
+  apenas_anexar: "Anexar",
+};
+
+/** Desvio de uma etapa para outra (ex.: "Reagente" → etapa 9). */
+export interface AdminBranch {
+  id: string;
+  /** Condição, pode ficar vazia ("segue para"). */
+  label: string;
+  /** id do AdminItem de destino. */
+  target_id: string;
+}
+
+export interface AdminItem {
+  id: string;
+  label: string;
+  /** Observação curta em cinza ao lado do item. */
+  note?: string | null;
+  action?: AdminItemAction | null;
+  /** Código SIGTAP, quando houver. */
+  code?: string | null;
+  /** Etapas: quem executa. */
+  responsible?: string | null;
+  branches?: AdminBranch[];
+}
+
+export interface AdminSection {
+  id: string;
+  title: string;
+  items: AdminItem[];
+}
+
+export interface AdminSheet {
+  layout: AdminSheetLayout;
+  /** Complemento do cabeçalho ("Consulta especializada", "Atendimento SAE"). */
+  kicker?: string | null;
+  /** Frase curta à direita do título. */
+  subtitle?: string | null;
+  /** Etiqueta em destaque (ex.: "Regulação · SISREG"). */
+  tag?: string | null;
+  /** Quem pode encaminhar/solicitar. */
+  who?: string | null;
+  sections: AdminSection[];
+  /** Orientação geral (barra verde). */
+  note?: string | null;
+  /** Atenção / quando não encaminhar (quadro vermelho). */
+  alert?: string | null;
+  /** Referência normativa e ano. */
+  reference?: string | null;
+}
+
+export const ADMIN_SHEET_LAYOUT_LABEL: Record<AdminSheetLayout, string> = {
+  requisitos: "Documentos e exames",
+  etapas: "Etapas do atendimento",
+};
+
 // `documento` ainda não está no enum gerado de NodeType até a migration 0007
 // ser aplicada e os tipos regenerados. Cast preserva o array como NodeType[].
 export const NODE_TYPES: NodeType[] = [
